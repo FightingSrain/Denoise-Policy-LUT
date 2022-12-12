@@ -1,9 +1,6 @@
 # import matplotlib
 # matplotlib.use("Agg")
-import torch
-import numpy as np
 import cv2
-import copy
 from tqdm import tqdm
 import State as State
 from pixelwise_a3c import *
@@ -29,9 +26,9 @@ sigma = 25
 
 # TRAINING_DATA_PATH = "./train.txt"
 # TESTING_DATA_PATH = "./train.txt"
-TRAINING_DATA_PATH = "./trainB.txt"
-TESTING_DATA_PATH = "./trainB.txt"
-IMAGE_DIR_PATH = ".//"
+TRAINING_DATA_PATH = "train.txt"
+TESTING_DATA_PATH = "train.txt"
+IMAGE_DIR_PATH = "..//"
 
 def main():
     model = PPO(N_ACTIONS).to(device)

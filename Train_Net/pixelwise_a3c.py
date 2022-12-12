@@ -12,7 +12,12 @@ torch.manual_seed(1234)
 
 class PixelWiseA3C_InnerState():
 
-    def __init__(self, model, optimizer, batch_size, t_max, gamma, beta=1e-2,
+    def __init__(self, model,
+                 optimizer,
+                 batch_size,
+                 t_max,
+                 gamma,
+                 beta=1e-2,
                  phi=lambda x: x,
                  pi_loss_coef=1.0,
                  v_loss_coef=0.5,

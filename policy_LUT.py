@@ -3,16 +3,11 @@
 
 # import matplotlib
 # matplotlib.use("Agg")
-import torch
-import numpy as np
 import cv2
-import copy
-from tqdm import tqdm
-import State as State
-from pixelwise_a3c import *
+from Train_Net import State as State
+from Train_Net.pixelwise_a3c import *
 # from FCN import *
-from FCN_sm import *
-from mini_batch_loader import MiniBatchLoader
+from Train_Net.FCN_sm import *
 import matplotlib.pyplot as plt
 import torch.optim as optim
 

@@ -1,7 +1,7 @@
 from chainer.links.caffe import CaffeFunction
-from FCN import PPO
+from Train_Net.FCN import PPO
 import torch
-import numpy as np
+
 net = CaffeFunction('./initial_weight/zhang_cvpr17_denoise_50_gray.caffemodel')
 print(net.layer1.W.data.shape)
 model = PPO(9, 1)

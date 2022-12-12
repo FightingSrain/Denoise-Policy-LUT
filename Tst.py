@@ -2,8 +2,8 @@
 import torch
 import numpy as np
 import cv2
-from FCN import PPO
-import State as State
+from Train_Net.FCN import PPO
+from Train_Net import State as State
 import matplotlib.pyplot as plt
 from torch.distributions import Categorical
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
