@@ -1,7 +1,7 @@
-# [PixelRL](https://arxiv.org/abs/1811.04323)
+# [Denoising policy LUT](https://github.com/FightingSrain/Denoise-Policy-LUT.git)
 
 
-`Reinforcement learning Denoising strategy lookup table`
+`Reinforcement learning Denoising policy lookup table`
 
 `If it helps you with your research, please star it. 🎈`
 
