@@ -152,12 +152,11 @@ class PixelWiseA3C_InnerState():
         p_trans = pout.permute([0, 2, 3, 1]).contiguous().view(-1, pout.shape[1])
         dist = Categorical(p_trans)
         action = dist.sample()
-        if test:
-            _, action = torch.max(pout.data, dim=1)
         log_p = torch.log(torch.clamp(p_trans, min=1e-9, max=1-1e-9))
         log_action_prob = torch.gather(log_p, 1, Variable(action.unsqueeze(-1))).view(n, 1, h, w)
         entropy = -torch.sum(p_trans * log_p, dim=-1).view(n, 1, h, w)
-
+        if test:
+            _, action = torch.max(pout, dim=1)
         # pout = torch.clamp(pout, min=0., max=1.)
         # p_trans = pout.permute([0, 2, 3, 1])
         # dist = Categorical(p_trans)

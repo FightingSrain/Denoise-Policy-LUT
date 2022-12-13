@@ -1,24 +1,25 @@
+import copy
 
-
-
-# import matplotlib
-# matplotlib.use("Agg")
 import cv2
-from Train_Net import State as State
-from Train_Net.pixelwise_a3c import *
-# from FCN import *
-from Train_Net.FCN_sm import *
 import matplotlib.pyplot as plt
 import torch.optim as optim
 
+from Train_Net import State as State
+# from FCN import *
+from Train_Net.FCN_sm import *
+from Train_Net.pixelwise_a3c import *
+
+
 def paint_amap(acmap):
     image = np.asanyarray(acmap.squeeze(), dtype=np.uint8)
-    # print(image)
     plt.imshow(image, vmin=1, vmax=9)
     plt.colorbar()
-    plt.pause(1)
-    # plt.show()
-    plt.close('all')
+    # plt.pause(1)
+    plt.show()
+    # plt.close('all')
+
+img = cv2.imread("../img_tst/test001.png", 0)
+C, H, W = 1, img.shape[0], img.shape[1]
 
 MOVE_RANGE = 3
 EPISODE_LEN = 1
@@ -28,14 +29,14 @@ N_ACTIONS = 9
 BATCH_SIZE = 1
 DIS_LR = 3e-4
 LR = 0.0001
-img_size = 63
+img_size = H
 sigma = 25
 SAMPLING_INTERVAL = 4
 
-img = cv2.imread("./BSD68/test001.png", 0)
+
 
 model = PPO(N_ACTIONS).to(device)
-# model.load_state_dict(torch.load("./torch_initweight/sig25_gray.pth"))
+# model.load_state_dict(torch.load("./GaussianFilterModel/sig25_gray.pth"))
 optimizer = optim.Adam(model.parameters(), lr=LR)
 with torch.no_grad():
     model.eval()
@@ -66,66 +67,52 @@ with torch.no_grad():
     # Rearange input: [N, 4] -> [N, C=1, H=2, W=2]
     input_tensor = onebyfourth.unsqueeze(1).unsqueeze(1).reshape(-1, 1, 2, 2).float() / 255.0
     print("Input size: ", input_tensor.size())
+    # -----------------------------------------------
+    # 2*2 inputs -> 3*3 inputs
     intputs = torch.zeros((input_tensor.size(0), 1, 3, 3))
     intputs[:, :, 0, 0] = input_tensor[:, :, 0, 0]
     intputs[:, :, 0, 2] = input_tensor[:, :, 0, 1]
     intputs[:, :, 2, 0] = input_tensor[:, :, 1, 0]
     intputs[:, :, 2, 2] = input_tensor[:, :, 1, 1]
-
-    raw_x = intputs.numpy()
-    current_state = State.State((raw_x.shape[0], 1, 63, 63), MOVE_RANGE)
-    agent = PixelWiseA3C_InnerState(model, optimizer, raw_x.shape[0], EPISODE_LEN, GAMMA)
-
-    # raw_x = np.expand_dims(img, axis=(0, 1))
-    label = copy.deepcopy(raw_x)
-    raw_n = np.zeros((raw_x.shape[0], 1, 3, 3)) * 1.0
-    current_state.reset(raw_x, raw_n)
-    reward = np.zeros(label.shape, label.dtype)
-    sum_reward = 0
-
-
-    for t in range(EPISODE_LEN):
-
-        # if n_epi % 10 == 0:
-        #     #     # cv2.imwrite('./test_img/'+'ori%2d' % (t+c)+'.jpg', current_state.image[20].transpose(1, 2, 0) * 255)
-        #     image = np.asanyarray(current_state.image[10].transpose(1, 2, 0) * 255, dtype=np.uint8)
-        #     image = np.squeeze(image)
-        #     cv2.imshow("temp", image)
-        #     cv2.waitKey(1)
-
-        previous_image = np.clip(current_state.image.copy(), a_min=0., a_max=1.)
-        action, inner_state, action_prob = agent.act_and_train(current_state.tensor, reward)
-        print(action.shape)
-        # if n_epi % 50 == 0:
-        print(action[0])
-        #     print(action_prob[10])
-        paint_amap(action[0])
-
-        current_state.step(action, inner_state)
-        reward = np.square(label - previous_image) * 255 - \
-                 np.square(label - current_state.image) * 255
-
-        sum_reward += np.mean(reward) * np.power(GAMMA, t)
+    # Split input to not over GPU memory
+    B = input_tensor.size(0) // 100
+    LUT = []
+    for b in range(100):
+        # Get Denoise LUT
+        # kernel：
+        #       X 0 X
+        #       0 0 0
+        #       X 0 X
+        # inputs:
+        #    nums 0 nums
+        #     0   0   0
+        #    nums 0 nums
+        if b == 99:
+            raw_x = intputs[b*B:].numpy()/255.
+        else:
+            raw_x = intputs[b*B:(b+1)*B].numpy()/255.
+        # raw_x = intputs.numpy() / 255.  # [N, 1, 3, 3]
+        current_state = State.State((raw_x.shape[0], 1, 3, 3), MOVE_RANGE)
+        agent = PixelWiseA3C_InnerState(model, optimizer, raw_x.shape[0], EPISODE_LEN, GAMMA)
 
 
+        label = copy.deepcopy(raw_x)
+        raw_n = np.zeros_like(raw_x)
+        current_state.reset(raw_x, raw_n)
+        reward = np.zeros(label.shape, label.dtype)
+        sum_reward = 0
 
+        for t in range(EPISODE_LEN):
+            previous_image = np.clip(current_state.image.copy(), a_min=0., a_max=1.)
+            action, inner_state, action_prob = agent.act_and_train(current_state.tensor, reward, test=True)
+            # print(paint_amap(action[0]))
+            # LUT = copy.deepcopy(action[:, 1, 1])
+            LUT += [copy.deepcopy(action[:, 1, 1])]
+            current_state.step(action, inner_state)
+            reward = np.square(label - previous_image) * 255 - \
+                     np.square(label - current_state.image) * 255
+            sum_reward += np.mean(reward) * np.power(GAMMA, t)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    LUTs = np.concatenate(LUT, 0)
+    print("Resulting LUT size: ", LUTs.shape)
+    np.save("../LUTs/sample_{}_LUTs".format(SAMPLING_INTERVAL), LUTs)
