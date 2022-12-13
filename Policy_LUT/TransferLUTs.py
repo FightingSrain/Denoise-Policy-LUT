@@ -2,7 +2,7 @@
 import numpy as np
 
 
-@staticmethod
+@ staticmethod
 def FourSimplexInterp(weight, img_in, h, w, q, rot, SAMPLING_INTERVAL=4):
     L = 2 ** (8 - SAMPLING_INTERVAL) + 1
     upscale = 1
