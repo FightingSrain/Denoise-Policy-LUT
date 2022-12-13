@@ -1,4 +1,4 @@
-# [Denoising policy LUT](https://github.com/FightingSrain/Denoise-Policy-LUT.git)
+# [Denoising Policy LUT](https://github.com/FightingSrain/Denoise-Policy-LUT.git)
 
 
 `Reinforcement learning Denoising policy lookup table`
