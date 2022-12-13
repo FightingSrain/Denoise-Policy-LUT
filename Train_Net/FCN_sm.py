@@ -68,7 +68,6 @@ class PPO(nn.Module):
 
     def pi_and_v(self, x):
         B, _, H, W = x.size()
-        # h_t = x[:, -64:, :, :]
         x_in = x[:, 0:1, :, :].reshape(B * 1, 1, H, W)
 
         x = self.conv1(x_in)

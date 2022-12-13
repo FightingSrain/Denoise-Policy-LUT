@@ -1,22 +1,23 @@
 # import matplotlib
 # matplotlib.use("Agg")
 import cv2
+import matplotlib.pyplot as plt
+import torch.optim as optim
 from tqdm import tqdm
+
 import State as State
-from pixelwise_a3c import *
 # from FCN import *
 from FCN_sm import *
 from mini_batch_loader import MiniBatchLoader
-import matplotlib.pyplot as plt
-import torch.optim as optim
+from pixelwise_a3c import *
+
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 torch.manual_seed(1234)
-
 
 MOVE_RANGE = 3
 EPISODE_LEN = 10
 MAX_EPISODE = 100000
-GAMMA = 0.95 
+GAMMA = 0.95
 N_ACTIONS = 9
 BATCH_SIZE = 32
 DIS_LR = 3e-4
@@ -29,6 +30,7 @@ sigma = 25
 TRAINING_DATA_PATH = "train.txt"
 TESTING_DATA_PATH = "train.txt"
 IMAGE_DIR_PATH = "..//"
+
 
 def main():
     model = PPO(N_ACTIONS).to(device)
@@ -47,9 +49,9 @@ def main():
 
     train_data_size = MiniBatchLoader.count_paths(TRAINING_DATA_PATH)
     indices = np.random.permutation(train_data_size)
-    
+
     for n_epi in tqdm(range(0, 9000000), ncols=70, initial=0):
-        
+
         r = indices[i_index: i_index + BATCH_SIZE]
         raw_x = mini_batch_loader.load_training_data(r)
 
@@ -64,16 +66,16 @@ def main():
             image = np.squeeze(image)
             cv2.imshow("rerr", image)
             cv2.waitKey(1)
-        
+
         for t in range(EPISODE_LEN):
 
             if n_epi % 10 == 0:
-            #     # cv2.imwrite('./test_img/'+'ori%2d' % (t+c)+'.jpg', current_state.image[20].transpose(1, 2, 0) * 255)
+                #     # cv2.imwrite('./test_img/'+'ori%2d' % (t+c)+'.jpg', current_state.image[20].transpose(1, 2, 0) * 255)
                 image = np.asanyarray(current_state.image[10].transpose(1, 2, 0) * 255, dtype=np.uint8)
                 image = np.squeeze(image)
                 cv2.imshow("temp", image)
                 cv2.waitKey(1)
-            
+
             previous_image = np.clip(current_state.image.copy(), a_min=0., a_max=1.)
             action, inner_state, action_prob = agent.act_and_train(current_state.tensor, reward)
 
@@ -86,9 +88,9 @@ def main():
             reward = np.square(label - previous_image) * 255 - \
                      np.square(label - current_state.image) * 255
             sum_reward += np.mean(reward) * np.power(GAMMA, t)
-        
+
         agent.stop_episode_and_train(current_state.tensor, reward, True)
-        
+
         if i_index + BATCH_SIZE >= train_data_size:
             i_index = 0
             indices = np.random.permutation(train_data_size)
@@ -100,6 +102,7 @@ def main():
 
         print("train total reward {a}".format(a=sum_reward * 255))
 
+
 def paint_amap(acmap):
     image = np.asanyarray(acmap.squeeze(), dtype=np.uint8)
     # print(image)
@@ -108,6 +111,7 @@ def paint_amap(acmap):
     plt.pause(1)
     # plt.show()
     plt.close('all')
+
 
 if __name__ == '__main__':
     main()
