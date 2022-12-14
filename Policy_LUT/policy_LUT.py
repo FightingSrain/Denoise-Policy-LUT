@@ -8,7 +8,7 @@ from Train_Net import State as State
 # from FCN import *
 from Train_Net.FCN_sm import *
 from Train_Net.pixelwise_a3c import *
-
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 def paint_amap(acmap):
     image = np.asanyarray(acmap.squeeze(), dtype=np.uint8)
@@ -30,13 +30,11 @@ BATCH_SIZE = 1
 DIS_LR = 3e-4
 LR = 0.0001
 img_size = H
-sigma = 25
-SAMPLING_INTERVAL = 4
-
+SAMPLING_INTERVAL = 2
 
 
 model = PPO(N_ACTIONS).to(device)
-# model.load_state_dict(torch.load("./GaussianFilterModel/sig25_gray.pth"))
+model.load_state_dict(torch.load("../GaussianFilterModel/GaussianModela8000_.pth"))
 optimizer = optim.Adam(model.parameters(), lr=LR)
 with torch.no_grad():
     model.eval()
@@ -65,7 +63,7 @@ with torch.no_grad():
     onebyfourth = torch.cat([fourth.unsqueeze(1), onebythree], 1)  # [256*256*256*256, 4]
 
     # Rearange input: [N, 4] -> [N, C=1, H=2, W=2]
-    input_tensor = onebyfourth.unsqueeze(1).unsqueeze(1).reshape(-1, 1, 2, 2).float() / 255.0
+    input_tensor = onebyfourth.unsqueeze(1).unsqueeze(1).reshape(-1, 1, 2, 2).float()
     print("Input size: ", input_tensor.size())
     # -----------------------------------------------
     # 2*2 inputs -> 3*3 inputs
@@ -77,7 +75,7 @@ with torch.no_grad():
     # Split input to not over GPU memory
     B = input_tensor.size(0) // 100
     LUT = []
-    for b in range(10000):
+    for b in range(100):
         # Get Denoise LUT
         # kernel：
         #       X 0 X
@@ -88,10 +86,10 @@ with torch.no_grad():
         #     0   0   0
         #    nums 0 nums
         print("Processing: ", b)
-        if b == 9999:
-            raw_x = intputs[b*B:].numpy()/255.
+        if b == 99:
+            raw_x = intputs[b*B:].numpy() / 255.
         else:
-            raw_x = intputs[b*B:(b+1)*B].numpy()/255.
+            raw_x = intputs[b*B:(b+1)*B].numpy() / 255.
         # raw_x = intputs.numpy() / 255.  # [N, 1, 3, 3]
         current_state = State.State((raw_x.shape[0], 1, 3, 3), MOVE_RANGE)
         agent = PixelWiseA3C_InnerState(model, optimizer, raw_x.shape[0], EPISODE_LEN, GAMMA)

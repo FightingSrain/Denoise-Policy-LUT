@@ -4,7 +4,7 @@ import torch
 import torch.nn as nn
 import math
 import torch.optim as optim
-torch.manual_seed(1)
+torch.manual_seed(1234)
 
 class PPO(nn.Module):
     def __init__(self, Action_N):

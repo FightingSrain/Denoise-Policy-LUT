@@ -6,9 +6,6 @@ from torch import autograd
 from torch.distributions import Categorical
 import torch
 
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-torch.manual_seed(1234)
-
 
 class PixelWiseA3C_InnerState():
 
@@ -180,5 +177,5 @@ class PixelWiseA3C_InnerState():
         if done:
             self.update(None)
         else:
-            statevar = state
+            statevar = copy.deepcopy(state)
             self.update(statevar)
