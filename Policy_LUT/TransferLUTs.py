@@ -28,6 +28,7 @@ def Interp(weight, img_in, h, w, q, rot, SAMPLING_INTERVAL=4):
     print(img_d1.shape)
     print(img_a1.flatten().shape)
     print(weight.shape)
+    print((img_a1.flatten().astype(np.int_) * L * L * L))
     print(weight[img_a1.flatten().astype(np.int_) * L * L * L +
                    img_b1.flatten().astype(np.int_) * L * L +
                    img_c1.flatten().astype(np.int_) * L +
