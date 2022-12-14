@@ -6,6 +6,7 @@ from Policy_LUT.TransferLUTs import Interp
 
 SAMPLING_INTERVAL = 4        # N bit uniform sampling
 SIGMA = 15                  # Gaussian noise std
+L = 2 ** (8 - SAMPLING_INTERVAL) + 1
 LUT_PATH = "../LUTs/sample_{}_LUTs.npy".format(SAMPLING_INTERVAL)    # Trained SR net params
 TEST_DIR = '../img_tst/'      # Test images
 
@@ -31,9 +32,20 @@ for ti, fn in enumerate(tqdm(files_gt)):
     print(h, w)
 
     img_noisy = np.pad(img_noisy, ((1, 1), (1, 1)), mode='reflect')
-    Interp(LUT, np.expand_dims(img_noisy, 0), h, w, q, rot=0)
-    print(img_noisy.shape)
-    print("------")
+    # Interp(LUT, np.expand_dims(img_noisy, 0), h, w, q, rot=0)
+    # print(img_noisy.shape)
+    # print("------")
+
+    img_a1 = img_noisy[:, 0:0 + h, 0:0 + w] // q
+    img_b1 = img_noisy[:, 0:0 + h, 2:2 + w] // q
+    img_c1 = img_noisy[:, 2:2 + h, 0:0 + w] // q
+    img_d1 = img_noisy[:, 2:2 + h, 2:2 + w] // q
+
+    out_action = LUT[img_a1.flatten().astype(np.int_) * L * L * L +
+                   img_b1.flatten().astype(np.int_) * L * L +
+                   img_c1.flatten().astype(np.int_) * L +
+                   img_d1.flatten().astype(np.int_)]. \
+        reshape((img_a1.shape[0], img_a1.shape[1], img_a1.shape[2]))
 
 
 

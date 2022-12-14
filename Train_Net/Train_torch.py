@@ -6,6 +6,8 @@ import torch.optim as optim
 from tqdm import tqdm
 
 import State as State
+import State_Bilateral as State
+import State_Gaussian as State
 # from FCN import *
 from FCN_sm import *
 from mini_batch_loader import MiniBatchLoader
@@ -15,7 +17,7 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 torch.manual_seed(1234)
 
 MOVE_RANGE = 3
-EPISODE_LEN = 10
+EPISODE_LEN = 5
 MAX_EPISODE = 100000
 GAMMA = 0.95
 N_ACTIONS = 9
@@ -23,7 +25,7 @@ BATCH_SIZE = 32
 DIS_LR = 3e-4
 LR = 0.001
 img_size = 63
-sigma = 25
+sigma = 15
 
 # TRAINING_DATA_PATH = "./train.txt"
 # TESTING_DATA_PATH = "./train.txt"

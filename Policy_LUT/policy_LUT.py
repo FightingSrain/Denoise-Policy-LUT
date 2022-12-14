@@ -77,7 +77,7 @@ with torch.no_grad():
     # Split input to not over GPU memory
     B = input_tensor.size(0) // 100
     LUT = []
-    for b in range(100):
+    for b in range(10000):
         # Get Denoise LUT
         # kernel：
         #       X 0 X
@@ -87,7 +87,8 @@ with torch.no_grad():
         #    nums 0 nums
         #     0   0   0
         #    nums 0 nums
-        if b == 99:
+        print("Processing: ", b)
+        if b == 9999:
             raw_x = intputs[b*B:].numpy()/255.
         else:
             raw_x = intputs[b*B:(b+1)*B].numpy()/255.

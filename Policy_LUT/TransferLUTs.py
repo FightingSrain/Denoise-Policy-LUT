@@ -1,6 +1,13 @@
-
+import matplotlib.pyplot as plt
 import numpy as np
 
+def paint_amap(acmap, num_action):
+    image = np.asanyarray(acmap.squeeze(), dtype=np.uint8)
+    plt.imshow(image, vmin=0, vmax=num_action)
+    plt.colorbar()
+    plt.show()
+    # plt.pause(1)
+    # plt.close()
 
 def Interp(weight, img_in, h, w, q, rot, SAMPLING_INTERVAL=4):
     L = 2 ** (8 - SAMPLING_INTERVAL) + 1
@@ -22,33 +29,21 @@ def Interp(weight, img_in, h, w, q, rot, SAMPLING_INTERVAL=4):
     fc_ = img_in[:, 2:2 + h, 0:0 + w] % q
     fd_ = img_in[:, 2:2 + h, 2:2 + w] % q
 
-    print(img_a1.shape)
-    print(img_b1.shape)
-    print(img_c1.shape)
-    print(img_d1.shape)
-    print(img_a1.flatten().shape)
-    print(weight.shape)
-    print((img_a1.flatten().astype(np.int_) * L * L * L))
-    print(weight[img_a1.flatten().astype(np.int_) * L * L * L +
-                   img_b1.flatten().astype(np.int_) * L * L +
-                   img_c1.flatten().astype(np.int_) * L +
-                   img_d1.flatten().astype(np.int_)].shape)
-    print("=======")
+
     # Vertices (O in Eq3 and Table3 in the paper)
     p0000 = weight[img_a1.flatten().astype(np.int_) * L * L * L +
                    img_b1.flatten().astype(np.int_) * L * L +
                    img_c1.flatten().astype(np.int_) * L +
                    img_d1.flatten().astype(np.int_)].\
         reshape((img_a1.shape[0], img_a1.shape[1], img_a1.shape[2], upscale, upscale))
-    print(p0000.shape)
-    print(p0000.flatten())
-    print("88888888888")
+
     p0001 = weight[img_a1.flatten().astype(np.int_) * L * L * L +
                    img_b1.flatten().astype(np.int_) * L * L +
                    img_c1.flatten().astype(np.int_) * L +
                    img_d2.flatten().astype(np.int_)].\
         reshape((img_a1.shape[0], img_a1.shape[1], img_a1.shape[2], upscale, upscale))
     pass
+
     # p0010 = weight[img_a1.flatten().astype(np.int_) * L * L * L +
     #                img_b1.flatten().astype(np.int_) * L * L +
     #                img_c2.flatten().astype(np.int_) * L +

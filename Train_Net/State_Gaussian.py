@@ -38,20 +38,20 @@ class State():
                                                               sigmaX=0.1), 0)
             if np.sum(act[i] == self.move_range + 1) > 0:
                 bilateral[i] = np.expand_dims(cv2.GaussianBlur(self.image[i].squeeze().astype(np.float32), ksize=(5, 5),
-                                                               sigmaX=0.3), 0)
+                                                               sigmaX=0.2), 0)
             if np.sum(act[i] == self.move_range + 2) > 0:
                 median[i] = np.expand_dims(cv2.GaussianBlur(self.image[i].squeeze().astype(np.float32), ksize=(5, 5),
-                                                            sigmaX=0.5), 0)  # 5
+                                                            sigmaX=0.3), 0)  # 5
             if np.sum(act[i] == self.move_range + 3) > 0:
                 gaussian2[i] = np.expand_dims(cv2.GaussianBlur(self.image[i].squeeze().astype(np.float32), ksize=(5, 5),
-                                                               sigmaX=0.7), 0)
+                                                               sigmaX=0.4), 0)
             if np.sum(act[i] == self.move_range + 4) > 0:
                 bilateral2[i] = np.expand_dims(
                     cv2.GaussianBlur(self.image[i].squeeze().astype(np.float32), ksize=(5, 5),
-                                     sigmaX=0.9), 0)
+                                     sigmaX=0.5), 0)
             if np.sum(act[i] == self.move_range + 5) > 0:  # 7
                 box[i] = np.expand_dims(cv2.GaussianBlur(self.image[i].squeeze().astype(np.float32), ksize=(5, 5),
-                                                         sigmaX=1.1), 0)
+                                                         sigmaX=0.6), 0)
 
         self.image = moved_image
         self.image = np.where(act[:, np.newaxis, :, :] == self.move_range, gaussian, self.image)
