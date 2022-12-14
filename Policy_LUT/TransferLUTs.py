@@ -40,14 +40,14 @@ def Interp(weight, img_in, h, w, q, rot, SAMPLING_INTERVAL=4):
                    img_d1.flatten().astype(np.int_)].\
         reshape((img_a1.shape[0], img_a1.shape[1], img_a1.shape[2], upscale, upscale))
     print(p0000.shape)
-    print(p0000)
+    print(p0000.flatten())
     print("88888888888")
     p0001 = weight[img_a1.flatten().astype(np.int_) * L * L * L +
                    img_b1.flatten().astype(np.int_) * L * L +
                    img_c1.flatten().astype(np.int_) * L +
                    img_d2.flatten().astype(np.int_)].\
         reshape((img_a1.shape[0], img_a1.shape[1], img_a1.shape[2], upscale, upscale))
-
+    pass
     # p0010 = weight[img_a1.flatten().astype(np.int_) * L * L * L +
     #                img_b1.flatten().astype(np.int_) * L * L +
     #                img_c2.flatten().astype(np.int_) * L +
