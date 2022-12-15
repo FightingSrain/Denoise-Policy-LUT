@@ -1,6 +1,7 @@
 import copy
-
+import cv2
 import torch
+import time
 from tqdm import tqdm
 from PIL import Image
 import numpy as np
@@ -8,7 +9,6 @@ import glob
 import matplotlib.pyplot as plt
 from Policy_LUT.Transfer_LUTs import transfer_lut
 
-import cv2
 from config import config
 # from Train_Net.State import State
 # from Train_Net.State_Gaussian import State
@@ -73,19 +73,35 @@ for ti, fn in enumerate(tqdm(files_gt)):
     ins_noisy = np.clip(img_gts + raw_n, a_min=0., a_max=1.)
     current_state.reset(img_gts, raw_n)
     inner_state = np.zeros((1, 64, h, w))
+
+
+    res = None
+    t1 = time.time()
+
     for i in range(5):
-        cv2.imshow('current_state.image_ins', (current_state.image[0, 0, :, :] * 255).astype(np.uint8))
+        # cv2.imshow('current_state.image_ins', (current_state.image[0, 0, :, :] * 255).astype(np.uint8))
         # cv2.waitKey(0)
         out_action = transfer_lut((current_state.image[0, 0, :, :]*255).astype(np.uint8),
                                   LUT, h, w, q, L)
-        paint_amap(out_action, 10)
+        # paint_amap(out_action, 10)
         current_state.step(torch.Tensor(out_action), inner_state)
+        if i == 4:
+            res = copy.deepcopy(current_state.image[0, 0, :, :])
+        ori_psnr = cv2.PSNR((ins_noisy[0, 0, :, :]*255).astype(np.uint8),
+                            (img_gts[0, 0, :, :]*255).astype(np.uint8))
+        print('ori_psnr: ', ori_psnr)
+        tmp_psnr = cv2.PSNR((current_state.image[0, 0, :, :] * 255).astype(np.uint8),
+                            (img_gts[0, 0, :, :] * 255).astype(np.uint8))
 
-        print(current_state.image.shape)
-        print("------------")
-        cv2.imshow('current_state.image', (current_state.image[0, 0, :, :]*255).astype(np.uint8))
-        cv2.waitKey(0)
+        print("PSNR: ", tmp_psnr)
+        print("---------------------------------")
+        # print(current_state.image.shape)
+        # print("------------")
+        # cv2.imshow('current_state.image', (current_state.image[0, 0, :, :]*255).astype(np.uint8))
+        # cv2.waitKey(0)
 
+    t2 = time.time()
+    print(t2 - t1)
 
 
 
