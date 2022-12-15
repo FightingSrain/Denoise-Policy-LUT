@@ -15,7 +15,7 @@ class config:
 
     # --LUT--
     SAMPLING_INTERVAL = 4  # N bit uniform sampling
-    SIGMA = 5  # Gaussian noise std
+    SIGMA = 10  # Gaussian noise std
 
 
     # --plicy LUTs--

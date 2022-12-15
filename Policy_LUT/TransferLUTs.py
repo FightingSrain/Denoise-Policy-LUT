@@ -8,6 +8,8 @@ def paint_amap(acmap, num_action):
     plt.show()
     # plt.pause(1)
     # plt.close()
+
+
 """
 img_noisy [h, w]
 LUT [N,]

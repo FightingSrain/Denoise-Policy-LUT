@@ -1,12 +1,18 @@
+import copy
+
+import torch
 from tqdm import tqdm
 from PIL import Image
 import numpy as np
 import glob
 import matplotlib.pyplot as plt
-from Policy_LUT.TransferLUTs import Interp
+from Policy_LUT.Transfer_LUTs import transfer_lut
 import cv2
-import copy
 from config import config
+# from Train_Net.State import State
+# from Train_Net.State_Gaussian import State
+# from Train_Net.State_Bilateral import State
+import Train_Net.State_Gaussian as State
 
 SAMPLING_INTERVAL = config.SAMPLING_INTERVAL        # N bit uniform sampling
 SIGMA = config.SIGMA                  # Gaussian noise std

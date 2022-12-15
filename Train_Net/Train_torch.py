@@ -6,8 +6,8 @@ import numpy as np
 import torch.optim as optim
 from tqdm import tqdm
 
-import State as State
-import State_Bilateral as State
+# import State as State
+# import State_Bilateral as State
 import State_Gaussian as State
 # from FCN import *
 from FCN_sm import *
