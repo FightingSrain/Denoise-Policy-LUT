@@ -24,11 +24,11 @@ MAX_EPISODE = 100000
 GAMMA = 0.95
 N_ACTIONS = 9
 LR = 0.0001
-SAMPLING_INTERVAL = 2
+SAMPLING_INTERVAL = 4
 
 
 model = PPO(N_ACTIONS).to(device)
-model.load_state_dict(torch.load("../GaussianFilterModel/GaussianModela8000_.pth"))
+model.load_state_dict(torch.load("../GaussianFilterModel/GaussianModela800_.pth"))
 optimizer = optim.Adam(model.parameters(), lr=LR)
 with torch.no_grad():
     model.eval()
