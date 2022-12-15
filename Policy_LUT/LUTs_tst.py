@@ -5,6 +5,7 @@ import glob
 import matplotlib.pyplot as plt
 from Policy_LUT.TransferLUTs import Interp
 import cv2
+import copy
 from config import config
 
 SAMPLING_INTERVAL = config.SAMPLING_INTERVAL        # N bit uniform sampling
