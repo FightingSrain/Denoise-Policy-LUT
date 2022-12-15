@@ -10,6 +10,8 @@ from config import config
 SAMPLING_INTERVAL = config.SAMPLING_INTERVAL        # N bit uniform sampling
 SIGMA = config.SIGMA                  # Gaussian noise std
 L = 2 ** (8 - SAMPLING_INTERVAL) + 1
+q = 2**SAMPLING_INTERVAL
+
 LUT_PATH = "../LUTs/sample_{}_LUTs.npy".format(SAMPLING_INTERVAL)    # Trained SR net params
 TEST_DIR = '../img_tst/'      # Test images
 
@@ -33,36 +35,48 @@ for ti, fn in enumerate(tqdm(files_gt)):
     # Load noise image and gt
     img_gt = np.array(Image.open(files_gt[ti])).astype(np.int) / 255.
     h, w = img_gt.shape  # (481, 321)
-    print(img_gt)
+    # print(img_gt)
     # Add noise
-    img_noisy = img_gt + np.random.normal(0, SIGMA, img_gt.shape).astype(img_gt.dtype)/255.
-    img_noisy = np.clip(img_noisy, 0, 1)
-    img_noisy = (img_noisy * 255.).astype(np.uint8)
-    q = 2**SAMPLING_INTERVAL
-    print(h, w)
+    # img_noisy = img_gt + np.random.normal(0, SIGMA, img_gt.shape).astype(img_gt.dtype)/255.
+    # img_noisy = np.clip(img_noisy, 0, 1)
+    # img_noisy = (img_noisy * 255.).astype(np.uint8)
+    # q = 2**SAMPLING_INTERVAL
+    # print(h, w)
 
-    img_noisy = np.pad(img_noisy, ((1, 1), (1, 1)), mode='reflect')
-    print(img_noisy)
-    cv2.imshow('img_noisy', img_noisy)
-    cv2.waitKey(0)
-    img_noisy = np.expand_dims(img_noisy, 0)
-    # Interp(LUT, np.expand_dims(img_noisy, 0), h, w, q, rot=0)
-    # print(img_noisy.shape)
-    # print("------")
+    # img_noisy = np.pad(img_noisy, ((1, 1), (1, 1)), mode='reflect')
+    # img_noisy = np.expand_dims(img_noisy, 0)
+    #
+    # img_a1 = img_noisy[:, 0:0 + h, 0:0 + w] // q
+    # img_b1 = img_noisy[:, 0:0 + h, 2:2 + w] // q
+    # img_c1 = img_noisy[:, 2:2 + h, 0:0 + w] // q
+    # img_d1 = img_noisy[:, 2:2 + h, 2:2 + w] // q
+    #
+    # out_action = LUT[img_a1.flatten().astype(np.int_) * L * L * L +
+    #                img_b1.flatten().astype(np.int_) * L * L +
+    #                img_c1.flatten().astype(np.int_) * L +
+    #                img_d1.flatten().astype(np.int_)]. \
+    #     reshape((img_a1.shape[0], img_a1.shape[1], img_a1.shape[2]))
 
-    img_a1 = img_noisy[:, 0:0 + h, 0:0 + w] // q
-    img_b1 = img_noisy[:, 0:0 + h, 2:2 + w] // q
-    img_c1 = img_noisy[:, 2:2 + h, 0:0 + w] // q
-    img_d1 = img_noisy[:, 2:2 + h, 2:2 + w] // q
+    # -------------------------------------------
+    img_gts = copy.deepcopy(img_gt)
+    img_gts = np.reshape(img_gts, (1, 1, h, w))
+    current_state = State.State((1, 1, h, w), config.MOVE_RANGE)
+    raw_n = np.random.normal(0, SIGMA, img_gts.shape).astype(img_gts.dtype) / 255.
+    ins_noisy = np.clip(img_gts + raw_n, a_min=0., a_max=1.)
+    current_state.reset(img_gts, raw_n)
+    inner_state = np.zeros((1, 64, h, w))
+    for i in range(5):
+        cv2.imshow('current_state.image_ins', (current_state.image[0, 0, :, :] * 255).astype(np.uint8))
+        # cv2.waitKey(0)
+        out_action = transfer_lut((current_state.image[0, 0, :, :]*255).astype(np.uint8),
+                                  LUT, h, w, q, L)
+        paint_amap(out_action, 10)
+        current_state.step(torch.Tensor(out_action), inner_state)
 
-    out_action = LUT[img_a1.flatten().astype(np.int_) * L * L * L +
-                   img_b1.flatten().astype(np.int_) * L * L +
-                   img_c1.flatten().astype(np.int_) * L +
-                   img_d1.flatten().astype(np.int_)]. \
-        reshape((img_a1.shape[0], img_a1.shape[1], img_a1.shape[2]))
-    paint_amap(out_action, 10)
-    print(out_action.shape)
-    print(out_action)
+        print(current_state.image.shape)
+        print("------------")
+        cv2.imshow('current_state.image', (current_state.image[0, 0, :, :]*255).astype(np.uint8))
+        cv2.waitKey(0)
 
 
 
