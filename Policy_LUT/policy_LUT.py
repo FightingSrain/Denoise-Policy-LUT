@@ -18,18 +18,12 @@ def paint_amap(acmap):
     plt.show()
     # plt.close('all')
 
-img = cv2.imread("../img_tst/test001.png", 0)
-C, H, W = 1, img.shape[0], img.shape[1]
-
 MOVE_RANGE = 3
 EPISODE_LEN = 1
 MAX_EPISODE = 100000
 GAMMA = 0.95
 N_ACTIONS = 9
-BATCH_SIZE = 1
-DIS_LR = 3e-4
 LR = 0.0001
-img_size = H
 SAMPLING_INTERVAL = 2
 
 
