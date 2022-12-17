@@ -79,7 +79,7 @@ for ti, fn in enumerate(tqdm(files_gt)):
     t1 = time.time()
 
     for i in range(5):
-        # cv2.imshow('current_state.image_ins', (current_state.image[0, 0, :, :] * 255).astype(np.uint8))
+        cv2.imshow('current_state.image_ins', (current_state.image[0, 0, :, :] * 255).astype(np.uint8))
         # cv2.waitKey(0)
         out_action = transfer_lut((current_state.image[0, 0, :, :]*255).astype(np.uint8),
                                   LUT, h, w, q, L)
@@ -97,8 +97,8 @@ for ti, fn in enumerate(tqdm(files_gt)):
         print("---------------------------------")
         # print(current_state.image.shape)
         # print("------------")
-        # cv2.imshow('current_state.image', (current_state.image[0, 0, :, :]*255).astype(np.uint8))
-        # cv2.waitKey(0)
+        cv2.imshow('current_state.image', (current_state.image[0, 0, :, :]*255).astype(np.uint8))
+        cv2.waitKey(0)
 
     t2 = time.time()
     print(t2 - t1)

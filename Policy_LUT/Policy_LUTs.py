@@ -28,7 +28,7 @@ SAMPLING_INTERVAL = 4
 
 
 model = PPO(N_ACTIONS).to(device)
-model.load_state_dict(torch.load("../GaussianFilterModel/GaussianModela800_.pth"))
+model.load_state_dict(torch.load("../GaussianFilterModel/GaussianModela46800_.pth"))
 optimizer = optim.Adam(model.parameters(), lr=LR)
 with torch.no_grad():
     model.eval()
