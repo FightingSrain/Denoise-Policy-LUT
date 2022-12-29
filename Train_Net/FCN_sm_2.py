@@ -11,7 +11,7 @@ class PPO(nn.Module):
         super(PPO, self).__init__()
         self.action_n = Action_N
         # self.conv1 = nn.Conv2d(1, 64, [2, 2], stride=1, padding=2, dilation=4)
-        self.conv1 = nn.Conv2d(2, 64, [2, 2], stride=1, padding=1, dilation=2)
+        self.conv1 = nn.Conv2d(1, 64, [2, 2], stride=1, padding=1, dilation=2)
         self.conv2 = nn.Conv2d(64, 64, 1, stride=1, padding=0, dilation=1)
         self.conv3 = nn.Conv2d(64, 64, 1, stride=1, padding=0, dilation=1)
         self.conv4 = nn.Conv2d(64, 64, 1, stride=1, padding=0, dilation=1)
@@ -38,7 +38,7 @@ class PPO(nn.Module):
     def pi_and_v(self, x):
         B, _, H, W = x.size()
         h_t = x[:, -64:, :, :]
-        x_in = x[:, 0:2, :, :].reshape(B * 1, 1, H, W)
+        x_in = x[:, 0:1, :, :].reshape(B * 1, 1, H, W)
 
         x = self.conv1(x_in)
         x = self.conv2(F.relu(x))

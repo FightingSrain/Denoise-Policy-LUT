@@ -1,3 +1,5 @@
+import copy
+
 import cv2
 import numpy as np
 
@@ -9,13 +11,14 @@ class State():
 
     def reset(self, x, n):
         self.image = np.clip(x + n, a_min=0., a_max=1.)
+        self.pre_img = copy.deepcopy(self.image)
         size = self.image.shape
         prev_state = np.zeros((size[0], 64, size[2], size[3]), dtype=np.float32)
         self.tensor = np.concatenate([self.image, prev_state], axis=1)
 
-    def set(self, x):
-        self.image = x
-        self.tensor[:, :self.image.shape[1], :, :] = self.image
+    # def set(self, x):
+    #     self.image = x
+    #     self.tensor[:, :self.image.shape[1], :, :] = self.image
 
     def step(self, act, inner_state):
         act = act.numpy()
@@ -52,6 +55,10 @@ class State():
             if np.sum(act[i] == self.move_range + 5) > 0:  # 7
                 box[i] = np.expand_dims(cv2.GaussianBlur(self.image[i].squeeze().astype(np.float32), ksize=(5, 5),
                                                          sigmaX=1.3), 0)
+
+        # pre_img
+        # self.pre_img = copy.deepcopy(self.image)
+        # self.tensor[:, self.image.shape[1]:self.image.shape[1]*2, :, :] = self.pre_img
 
         self.image = moved_image
         self.image = np.where(act[:, np.newaxis, :, :] == self.move_range, gaussian, self.image)

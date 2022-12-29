@@ -10,7 +10,7 @@ from tqdm import tqdm
 # import State_Bilateral as State
 import State_Gaussian as State
 # from FCN import *
-from FCN_sm import *
+from FCN_sm_2 import *
 from mini_batch_loader import MiniBatchLoader
 from pixelwise_a3c import *
 from config import config

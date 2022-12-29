@@ -4,9 +4,9 @@ import cv2
 import matplotlib.pyplot as plt
 import torch.optim as optim
 
-from Train_Net import State as State
+from Train_Net import State_Gaussian as State
 # from FCN import *
-from Train_Net.FCN_sm import *
+from Train_Net.FCN_sm_2 import *
 from Train_Net.pixelwise_a3c import *
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
