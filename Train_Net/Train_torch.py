@@ -10,7 +10,7 @@ from tqdm import tqdm
 # import State_Bilateral as State
 import State_Gaussian as State
 # from FCN import *
-from FCN_sm_2 import *
+from FCN_sm_4 import *
 from mini_batch_loader import MiniBatchLoader
 from pixelwise_a3c import *
 from config import config
@@ -54,7 +54,7 @@ def main():
         if n_epi % 10 == 0:
             image = np.asanyarray(label[10].transpose(1, 2, 0) * 255, dtype=np.uint8)
             image = np.squeeze(image)
-            cv2.imshow("rerr", image)
+            cv2.imshow("label", image)
             cv2.waitKey(1)
 
         for t in range(config.EPISODE_LEN):
@@ -78,7 +78,7 @@ def main():
             # 是否可以自监督训练，即不需要label
             reward = np.square(label - previous_image) * 255 - \
                      np.square(label - current_state.image) * 255
-            # reward = -np.square(current_state.image - ins_noisy) * 255
+            # reward = -np.square(current_state.image - label) * 255
             sum_reward += np.mean(reward) * np.power(config.GAMMA, t)
 
         agent.stop_episode_and_train(current_state.tensor, reward, True)
