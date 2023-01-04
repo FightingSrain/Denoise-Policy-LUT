@@ -10,9 +10,8 @@ import matplotlib.pyplot as plt
 from Policy_LUT.Transfer_LUTs import transfer_lut
 
 from config import config
-# from Train_Net.State import State
-# from Train_Net.State_Gaussian import State
-# from Train_Net.State_Bilateral import State
+# import Train_Net.State as State
+# import Train_Net.State_Bilateral as State
 import Train_Net.State_Gaussian as State
 
 SAMPLING_INTERVAL = config.SAMPLING_INTERVAL        # N bit uniform sampling
@@ -79,7 +78,7 @@ for ti, fn in enumerate(tqdm(files_gt)):
     t1 = time.time()
 
     for i in range(5):
-        cv2.imshow('current_state.image_ins', (current_state.image[0, 0, :, :] * 255).astype(np.uint8))
+        # cv2.imshow('current_state.image_ins', (current_state.image[0, 0, :, :] * 255).astype(np.uint8))
         # cv2.waitKey(0)
         out_action = transfer_lut((current_state.image[0, 0, :, :]*255).astype(np.uint8),
                                   LUT, h, w, q, L)
@@ -87,21 +86,21 @@ for ti, fn in enumerate(tqdm(files_gt)):
         current_state.step(torch.Tensor(out_action), inner_state)
         if i == 4:
             res = copy.deepcopy(current_state.image[0, 0, :, :])
-        ori_psnr = cv2.PSNR((ins_noisy[0, 0, :, :]*255).astype(np.uint8),
-                            (img_gts[0, 0, :, :]*255).astype(np.uint8))
-        print('ori_psnr: ', ori_psnr)
-        tmp_psnr = cv2.PSNR((current_state.image[0, 0, :, :] * 255).astype(np.uint8),
-                            (img_gts[0, 0, :, :] * 255).astype(np.uint8))
-
-        print("PSNR: ", tmp_psnr)
-        print("---------------------------------")
+        # ori_psnr = cv2.PSNR((ins_noisy[0, 0, :, :]*255).astype(np.uint8),
+        #                     (img_gts[0, 0, :, :]*255).astype(np.uint8))
+        # print('ori_psnr: ', ori_psnr)
+        # tmp_psnr = cv2.PSNR((current_state.image[0, 0, :, :] * 255).astype(np.uint8),
+        #                     (img_gts[0, 0, :, :] * 255).astype(np.uint8))
+        #
+        # print("PSNR: ", tmp_psnr)
+        # print("---------------------------------")
         # print(current_state.image.shape)
         # print("------------")
-        cv2.imshow('current_state.image', (current_state.image[0, 0, :, :]*255).astype(np.uint8))
-        cv2.waitKey(0)
+        # cv2.imshow('current_state.image', (current_state.image[0, 0, :, :]*255).astype(np.uint8))
+        # cv2.waitKey(0)
 
     t2 = time.time()
-    print(t2 - t1)
+    print('消耗时间：',(t2 - t1)*1000, "ms")
 
 
 

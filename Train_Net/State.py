@@ -1,7 +1,7 @@
 import numpy as np
 import sys
 import cv2
-
+import copy
 
 class State():
     def __init__(self, size, move_range):
@@ -10,6 +10,7 @@ class State():
 
     def reset(self, x, n):
         self.image = np.clip(x + n, a_min=0., a_max=1.)
+        self.pre_img = copy.deepcopy(self.image)
         size = self.image.shape
         prev_state = np.zeros((size[0], 64, size[2], size[3]), dtype=np.float32)
         self.tensor = np.concatenate([self.image, prev_state], axis=1)

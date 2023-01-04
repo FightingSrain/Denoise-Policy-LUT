@@ -33,7 +33,7 @@ cv2.waitKey(0)
 print(cv2.PSNR(img, imgs))
 
 res = None
-
+guide = cv2.bilateralFilter(imgs, d=5, sigmaColor=0.1, sigmaSpace=5)
 len = 1
 t1 = time.time()
 for i in range(len):
@@ -41,12 +41,12 @@ for i in range(len):
     # imgs = cv2.bilateralFilter(imgs, d=5, sigmaColor=0.1, sigmaSpace=5) # 0.002s
     # imgs = cv2.boxFilter(imgs, ddepth=-1, ksize=(5, 5)) # 很快，基本不花时间
     # imgs = cv2.medianBlur(imgs, ksize=5) # 0.001s
-    imgs = cv2.fastNlMeansDenoising(imgs, h=10, templateWindowSize=7, searchWindowSize=21) # 0.14s
-
+    imgs = cv2.fastNlMeansDenoising(imgs, h=5, templateWindowSize=7, searchWindowSize=21)  # 136ms
+    # imgs = imgGuidedFilter = cv2.ximgproc.guidedFilter(guide, img, 5, 2, -1)  # 4ms
     if i == len - 1:
         res = copy.deepcopy(imgs)
 t2 = time.time()
 cv2.imshow('res', res)
 cv2.waitKey(0)
 print(cv2.PSNR(img, res))
-print(t2 - t1)
+print('消耗时间：',(t2 - t1)*1000, "ms")

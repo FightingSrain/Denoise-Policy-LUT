@@ -3,6 +3,7 @@
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
+import torch.cuda
 import torch.optim as optim
 from tqdm import tqdm
 
@@ -23,7 +24,7 @@ IMAGE_DIR_PATH = "..//"
 
 def main():
     model = PPO(config.N_ACTIONS).to(device)
-    # model.load_state_dict(torch.load("./torch_initweight/sig25_gray.pth"))
+    model.load_state_dict(torch.load("../GaussianFilterModel/GaussianModela8000_.pth"))
     optimizer = optim.Adam(model.parameters(), lr=config.LR)
     i_index = 0
 
@@ -67,12 +68,14 @@ def main():
                 cv2.waitKey(1)
 
             previous_image = np.clip(current_state.image.copy(), a_min=0., a_max=1.)
-            action, inner_state, action_prob = agent.act_and_train(current_state.tensor, reward)
+            action, inner_state, action_prob, tst_act = agent.act_and_train(current_state.tensor, reward)
 
             if n_epi % 150 == 0:
                 print(action[10])
                 print(action_prob[10])
-                paint_amap(action[10])
+                paint_amap(tst_act[10])
+                # paint_amap(action[10])
+                # paint_scatter(tst_act[10], current_state.image[10])
 
             current_state.step(action, inner_state)
             # 是否可以自监督训练，即不需要label
@@ -83,6 +86,7 @@ def main():
 
         agent.stop_episode_and_train(current_state.tensor, reward, True)
 
+        torch.cuda.empty_cache()
 
         if n_epi % 1000 == 0:
             torch.save(model.state_dict(), "../GaussianFilterModel/GaussianModela{}_.pth".format(n_epi))
@@ -108,6 +112,20 @@ def paint_amap(acmap):
     # plt.show()
     plt.close('all')
 
+def paint_scatter(act, img):
+    act = np.asanyarray(act.squeeze(), dtype=np.uint8)
+    img = np.asanyarray(img.squeeze()*255, dtype=np.uint8)
+    act = act.reshape(63*63)
+    color = ['red', 'green', 'blue', 'yellow', 'black', 'purple', 'orange', 'pink', 'gray']
+    img = img.reshape(63*63)
+    for i in range(9):
+        # plt.scatter(img[act==i],
+        #             img[act==i], c=color[i], marker='.')
+        plt.bar(img[act==i],
+                img[act==i], color=color[i])
+    # plt.pause(1)
+    # plt.close('all')
+    plt.show()
 
 if __name__ == '__main__':
     main()

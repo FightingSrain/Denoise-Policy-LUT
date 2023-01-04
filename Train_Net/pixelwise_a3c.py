@@ -156,6 +156,8 @@ class PixelWiseA3C_InnerState():
         entropy = -torch.sum(p_trans * log_p, dim=-1).view(n, 1, h, w)
         if test:
             _, action = torch.max(pout, dim=1)
+        _, tst_act = torch.max(pout, dim=1)
+        tst_act = tst_act.view(n, h, w).detach().cpu().numpy()
         # pout = torch.clamp(pout, min=0., max=1.)
         # p_trans = pout.permute([0, 2, 3, 1])
         # dist = Categorical(p_trans)
@@ -172,7 +174,8 @@ class PixelWiseA3C_InnerState():
 
         return action.view(n, h, w).detach().cpu(), \
                inner_state.detach().cpu(), \
-               torch.exp(log_action_prob).squeeze(1).detach().cpu()
+               torch.exp(log_action_prob).squeeze(1).detach().cpu(), \
+               tst_act
 
     def stop_episode_and_train(self, state, reward, done=False):
         self.past_rewards[self.t - 1] = torch.Tensor(reward).cuda()
