@@ -83,8 +83,9 @@ def main():
 
         agent.stop_episode_and_train(current_state.tensor, reward, True)
 
-        # if n_epi % 200 == 0:
-        #     torch.save(model.state_dict(), "../GaussianFilterModel/GaussianModela{}_.pth".format(n_epi))
+
+        if n_epi % 1000 == 0:
+            torch.save(model.state_dict(), "../GaussianFilterModel/GaussianModela{}_.pth".format(n_epi))
 
         if i_index + config.BATCH_SIZE >= train_data_size:
             i_index = 0

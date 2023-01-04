@@ -2,6 +2,7 @@
 import torch.nn.functional as F
 import torch
 import torch.nn as nn
+from torch.autograd import Variable
 import math
 import copy
 import torch.optim as optim
@@ -56,6 +57,7 @@ class PPO(nn.Module):
         p = self.conv4p(F.relu(x))
         p = self.conv5p(F.relu(p))
         policy = F.softmax(self.conv6p(p), dim=1)
+        # policy = self.conv6p(p)
 
         v = self.conv4v(F.relu(x))
         v = self.conv5v(F.relu(v))
@@ -64,22 +66,40 @@ class PPO(nn.Module):
         return policy, value, h_t
 
     def forward(self, x):
-        x1 = copy.deepcopy(x)
-        x1[:, 0:1, :, :] = torch.rot90(x1[:, 0:1, :, :], 1, [2,3])
-        policy1, value1, h_t1 = self.pi_and_v(x1)
+        # batch_L, batch_H = x.detach().cpu().dequeue()
+        # batch_H = Variable(torch.from_numpy(batch_H)).cuda()  # BxCxHxW, range [0,1]
+        batch_L = x  # BxCxHxW, range [0,1]
 
-        x2 = copy.deepcopy(x)
+
+        x1 = copy.deepcopy(batch_L)
+        x1[:, 0:1, :, :] = torch.rot90(x1[:, 0:1, :, :], 1, [2, 3])
+        policy1, value1, h_t1 = self.pi_and_v(x1)
+        policy1 = torch.rot90(policy1, 3, [2, 3])
+        value1 = torch.rot90(value1, 3, [2, 3])
+        h_t1 = torch.rot90(h_t1, 3, [2, 3])
+
+
+        x2 = copy.deepcopy(batch_L)
         x2[:, 0:1, :, :] = torch.rot90(x2[:, 0:1, :, :], 2, [2, 3])
         policy2, value2, h_t2 = self.pi_and_v(x2)
+        policy2 = torch.rot90(policy2, 2, [2, 3])
+        value2 = torch.rot90(value2, 2, [2, 3])
+        h_t2 = torch.rot90(h_t2, 2, [2, 3])
 
-        x3 = copy.deepcopy(x)
+
+        x3 = copy.deepcopy(batch_L)
         x3[:, 0:1, :, :] = torch.rot90(x3[:, 0:1, :, :], 3, [2, 3])
         policy3, value3, h_t3 = self.pi_and_v(x3)
+        policy3 = torch.rot90(policy3, 1, [2, 3])
+        value3 = torch.rot90(value3, 1, [2, 3])
+        h_t3 = torch.rot90(h_t3, 1, [2, 3])
 
-        x4 = copy.deepcopy(x)
+
+        x4 = copy.deepcopy(batch_L)
         # x4[:, 0:1, :, :] = x4[:, 0:1, :, :]
         policy4, value4, h_t4 = self.pi_and_v(x4)
 
+        # policy = F.softmax((policy1 + policy2 + policy3 + policy4) / 4., dim=1)
         policy = (policy1 + policy2 + policy3 + policy4) / 4.
         value = (value1 + value2 + value3 + value4) / 4.
         h_t = (h_t1 + h_t2 + h_t3 + h_t4) / 4.

@@ -66,6 +66,19 @@ with torch.no_grad():
     intputs[:, :, 0, 2] = input_tensor[:, :, 0, 1]
     intputs[:, :, 2, 0] = input_tensor[:, :, 1, 0]
     intputs[:, :, 2, 2] = input_tensor[:, :, 1, 1]
+    # =================
+    # intputs = torch.zeros((input_tensor.size(0), 1, 3, 3))
+    # intputs[:, :, 1, 1] = input_tensor[:, :, 0, 0]
+    # intputs[:, :, 1, 2] = input_tensor[:, :, 0, 1]
+    # intputs[:, :, 2, 1] = input_tensor[:, :, 1, 0]
+    # intputs[:, :, 2, 2] = input_tensor[:, :, 1, 1]
+    # =================
+    # intputs = torch.zeros((input_tensor.size(0), 1, 5, 5))
+    # intputs[:, :, 2, 2] = input_tensor[:, :, 0, 0]
+    # intputs[:, :, 2, 4] = input_tensor[:, :, 0, 1]
+    # intputs[:, :, 4, 2] = input_tensor[:, :, 1, 0]
+    # intputs[:, :, 4, 4] = input_tensor[:, :, 1, 1]
+
     # Split input to not over GPU memory
     B = input_tensor.size(0) // 100
     LUT = []
@@ -85,12 +98,12 @@ with torch.no_grad():
         else:
             raw_x = intputs[b*B:(b+1)*B].numpy() / 255.
         # raw_x = intputs.numpy() / 255.  # [N, 1, 3, 3]
-        current_state = State.State((raw_x.shape[0], 1, 3, 3), MOVE_RANGE)
+        current_state = State.State((raw_x.shape[0], 1, intputs.size(2), intputs.size(3)), MOVE_RANGE)
         agent = PixelWiseA3C_InnerState(model, optimizer, raw_x.shape[0], EPISODE_LEN, GAMMA)
 
 
         label = copy.deepcopy(raw_x)
-        raw_n = np.zeros_like(raw_x)
+        raw_n = np.zeros_like(raw_x)  # no noise
         current_state.reset(raw_x, raw_n)
         reward = np.zeros(label.shape, label.dtype)
         sum_reward = 0
@@ -100,7 +113,8 @@ with torch.no_grad():
             action, inner_state, action_prob = agent.act_and_train(current_state.tensor, reward, test=True)
             # print(paint_amap(action[0]))
             # LUT = copy.deepcopy(action[:, 1, 1])
-            LUT += [copy.deepcopy(action[:, 1, 1])]
+            LUT += [copy.deepcopy(action[:, 1, 1])]  # [3, 3]
+            # LUT += [copy.deepcopy(action[:, 2, 2])]  # [5, 5]
             current_state.step(action, inner_state)
             reward = np.square(label - previous_image) * 255 - \
                      np.square(label - current_state.image) * 255
