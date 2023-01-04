@@ -6,7 +6,10 @@ import torch.optim as optim
 
 from Train_Net import State_Gaussian as State
 # from FCN import *
-from Train_Net.FCN_sm_2 import *
+# from Train_Net.FCN_sm import *
+# from Train_Net.FCN_sm_2 import *
+# from Train_Net.FCN_sm_3 import *
+from Train_Net.FCN_sm_4 import *
 from Train_Net.pixelwise_a3c import *
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
@@ -60,19 +63,27 @@ with torch.no_grad():
     input_tensor = onebyfourth.unsqueeze(1).unsqueeze(1).reshape(-1, 1, 2, 2).float()
     print("Input size: ", input_tensor.size())
     # -----------------------------------------------
-    # 2*2 inputs -> 3*3 inputs
+    # 2*2 inputs -> 3*3 inputs (a)
     intputs = torch.zeros((input_tensor.size(0), 1, 3, 3))
     intputs[:, :, 0, 0] = input_tensor[:, :, 0, 0]
     intputs[:, :, 0, 2] = input_tensor[:, :, 0, 1]
     intputs[:, :, 2, 0] = input_tensor[:, :, 1, 0]
     intputs[:, :, 2, 2] = input_tensor[:, :, 1, 1]
+    # 2*2 inputs -> 5*5 inputs (b)
+    # intputs = torch.zeros((input_tensor.size(0), 1, 3, 3))
+    # intputs[:, :, 0, 0] = input_tensor[:, :, 0, 0]
+    # intputs[:, :, 0, 4] = input_tensor[:, :, 0, 1]
+    # intputs[:, :, 4, 0] = input_tensor[:, :, 1, 0]
+    # intputs[:, :, 4, 4] = input_tensor[:, :, 1, 1]
     # =================
+    # 2*2 inputs -> 3*3 inputs (c)
     # intputs = torch.zeros((input_tensor.size(0), 1, 3, 3))
     # intputs[:, :, 1, 1] = input_tensor[:, :, 0, 0]
     # intputs[:, :, 1, 2] = input_tensor[:, :, 0, 1]
     # intputs[:, :, 2, 1] = input_tensor[:, :, 1, 0]
     # intputs[:, :, 2, 2] = input_tensor[:, :, 1, 1]
     # =================
+    # 2*2 inputs -> 5*5 inputs (d)
     # intputs = torch.zeros((input_tensor.size(0), 1, 5, 5))
     # intputs[:, :, 2, 2] = input_tensor[:, :, 0, 0]
     # intputs[:, :, 2, 4] = input_tensor[:, :, 0, 1]

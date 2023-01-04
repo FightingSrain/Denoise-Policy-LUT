@@ -66,12 +66,7 @@ class PPO(nn.Module):
         return policy, value, h_t
 
     def forward(self, x):
-        # batch_L, batch_H = x.detach().cpu().dequeue()
-        # batch_H = Variable(torch.from_numpy(batch_H)).cuda()  # BxCxHxW, range [0,1]
-        batch_L = x  # BxCxHxW, range [0,1]
-
-
-        x1 = copy.deepcopy(batch_L)
+        x1 = copy.deepcopy(x)
         x1[:, 0:1, :, :] = torch.rot90(x1[:, 0:1, :, :], 1, [2, 3])
         policy1, value1, h_t1 = self.pi_and_v(x1)
         policy1 = torch.rot90(policy1, 3, [2, 3])
@@ -79,7 +74,7 @@ class PPO(nn.Module):
         h_t1 = torch.rot90(h_t1, 3, [2, 3])
 
 
-        x2 = copy.deepcopy(batch_L)
+        x2 = copy.deepcopy(x)
         x2[:, 0:1, :, :] = torch.rot90(x2[:, 0:1, :, :], 2, [2, 3])
         policy2, value2, h_t2 = self.pi_and_v(x2)
         policy2 = torch.rot90(policy2, 2, [2, 3])
@@ -87,7 +82,7 @@ class PPO(nn.Module):
         h_t2 = torch.rot90(h_t2, 2, [2, 3])
 
 
-        x3 = copy.deepcopy(batch_L)
+        x3 = copy.deepcopy(x)
         x3[:, 0:1, :, :] = torch.rot90(x3[:, 0:1, :, :], 3, [2, 3])
         policy3, value3, h_t3 = self.pi_and_v(x3)
         policy3 = torch.rot90(policy3, 1, [2, 3])
@@ -95,7 +90,7 @@ class PPO(nn.Module):
         h_t3 = torch.rot90(h_t3, 1, [2, 3])
 
 
-        x4 = copy.deepcopy(batch_L)
+        x4 = copy.deepcopy(x)
         # x4[:, 0:1, :, :] = x4[:, 0:1, :, :]
         policy4, value4, h_t4 = self.pi_and_v(x4)
 

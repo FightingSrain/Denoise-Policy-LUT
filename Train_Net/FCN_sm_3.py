@@ -62,16 +62,25 @@ class PPO(nn.Module):
 
     def forward(self, x):
         x1 = copy.deepcopy(x)
-        x1[:, 0:1, :, :] = torch.rot90(x1[:, 0:1, :, :], 1, [2,3])
+        x1[:, 0:1, :, :] = torch.rot90(x1[:, 0:1, :, :], 1, [2, 3])
         policy1, value1, h_t1 = self.pi_and_v(x1)
+        policy1 = torch.rot90(policy1, 3, [2, 3])
+        value1 = torch.rot90(value1, 3, [2, 3])
+        h_t1 = torch.rot90(h_t1, 3, [2, 3])
 
         x2 = copy.deepcopy(x)
         x2[:, 0:1, :, :] = torch.rot90(x2[:, 0:1, :, :], 2, [2, 3])
         policy2, value2, h_t2 = self.pi_and_v(x2)
+        policy2 = torch.rot90(policy2, 2, [2, 3])
+        value2 = torch.rot90(value2, 2, [2, 3])
+        h_t2 = torch.rot90(h_t2, 2, [2, 3])
 
         x3 = copy.deepcopy(x)
         x3[:, 0:1, :, :] = torch.rot90(x3[:, 0:1, :, :], 3, [2, 3])
         policy3, value3, h_t3 = self.pi_and_v(x3)
+        policy3 = torch.rot90(policy3, 1, [2, 3])
+        value3 = torch.rot90(value3, 1, [2, 3])
+        h_t3 = torch.rot90(h_t3, 1, [2, 3])
 
         x4 = copy.deepcopy(x)
         # x4[:, 0:1, :, :] = x4[:, 0:1, :, :]
