@@ -91,7 +91,6 @@ class PPO(nn.Module):
 
 
         x4 = copy.deepcopy(x)
-        # x4[:, 0:1, :, :] = x4[:, 0:1, :, :]
         policy4, value4, h_t4 = self.pi_and_v(x4)
 
         # policy = F.softmax((policy1 + policy2 + policy3 + policy4) / 4., dim=1)

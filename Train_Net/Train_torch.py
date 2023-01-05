@@ -24,7 +24,7 @@ IMAGE_DIR_PATH = "..//"
 
 def main():
     model = PPO(config.N_ACTIONS).to(device)
-    model.load_state_dict(torch.load("../GaussianFilterModel/GaussianModela8000_.pth"))
+    # model.load_state_dict(torch.load("../GaussianFilterModel/GaussianModela28000_.pth"))
     optimizer = optim.Adam(model.parameters(), lr=config.LR)
     i_index = 0
 

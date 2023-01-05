@@ -144,20 +144,23 @@ class PixelWiseA3C_InnerState():
             self.update(statevar)
 
         self.past_states[self.t] = statevar
-        # pout, vout, inner_state = self.model.pi_and_v(statevar)
-        pout, vout, inner_state = self.model(statevar)
-        n, num_actions, h, w = pout.shape
+        if test:
+            pout, vout, inner_state = self.model.pi_and_v(statevar)
+            n, num_actions, h, w = pout.shape
+        else:
+            pout, vout, inner_state = self.model(statevar)
+            n, num_actions, h, w = pout.shape
 
-        p_trans = pout.permute([0, 2, 3, 1]).contiguous().view(-1, pout.shape[1])
-        dist = Categorical(p_trans)
-        action = dist.sample()
-        log_p = torch.log(torch.clamp(p_trans, min=1e-9, max=1-1e-9))
-        log_action_prob = torch.gather(log_p, 1, Variable(action.unsqueeze(-1))).view(n, 1, h, w)
-        entropy = -torch.sum(p_trans * log_p, dim=-1).view(n, 1, h, w)
+            p_trans = pout.permute([0, 2, 3, 1]).contiguous().view(-1, pout.shape[1])
+            dist = Categorical(p_trans)
+            action = dist.sample()
+            log_p = torch.log(torch.clamp(p_trans, min=1e-9, max=1-1e-9))
+            log_action_prob = torch.gather(log_p, 1, Variable(action.unsqueeze(-1))).view(n, 1, h, w)
+            entropy = -torch.sum(p_trans * log_p, dim=-1).view(n, 1, h, w)
         if test:
             _, action = torch.max(pout, dim=1)
         _, tst_act = torch.max(pout, dim=1)
-        tst_act = tst_act.view(n, h, w).detach().cpu().numpy()
+        tst_act = tst_act.view(n, h, w).detach().cpu()
         # pout = torch.clamp(pout, min=0., max=1.)
         # p_trans = pout.permute([0, 2, 3, 1])
         # dist = Categorical(p_trans)
@@ -166,13 +169,15 @@ class PixelWiseA3C_InnerState():
         # action_prob = pout.gather(1, action.unsqueeze(1))
         # action_prob = torch.clamp(action_prob, min=1e-9, max=1-1e-9)
         # entropy = -torch.log(action_prob) * action_prob
-
-        self.past_action_log_prob[self.t] = log_action_prob.cuda()
-        self.past_action_entropy[self.t] = entropy.cuda()
-        self.past_values[self.t] = vout
-        self.t += 1
-
-        return action.view(n, h, w).detach().cpu(), \
+        if not test:
+            self.past_action_log_prob[self.t] = log_action_prob.cuda()
+            self.past_action_entropy[self.t] = entropy.cuda()
+            self.past_values[self.t] = vout
+            self.t += 1
+        if test:
+            return tst_act, pout.detach().cpu().numpy()
+        else:
+            return action.view(n, h, w).detach().cpu(), \
                inner_state.detach().cpu(), \
                torch.exp(log_action_prob).squeeze(1).detach().cpu(), \
                tst_act

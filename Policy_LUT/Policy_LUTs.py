@@ -22,20 +22,18 @@ def paint_amap(acmap):
     # plt.close('all')
 
 MOVE_RANGE = 3
-EPISODE_LEN = 1
 MAX_EPISODE = 100000
 GAMMA = 0.95
 N_ACTIONS = 9
 LR = 0.0001
-SAMPLING_INTERVAL = 4
+SAMPLING_INTERVAL = 2
 
 
 model = PPO(N_ACTIONS).to(device)
-model.load_state_dict(torch.load("../GaussianFilterModel/GaussianModela46800_.pth"))
+model.load_state_dict(torch.load("../GaussianFilterModel/GaussianModela10000_.pth"))
 optimizer = optim.Adam(model.parameters(), lr=LR)
 with torch.no_grad():
     model.eval()
-
     # 1D input
     # base = torch.arange(0, 257, 1)
     base = torch.arange(0, 257, 2 ** SAMPLING_INTERVAL)  # 0-256 像素值范围，下采样，只采样2**4=16个种类像素值
@@ -64,11 +62,11 @@ with torch.no_grad():
     print("Input size: ", input_tensor.size())
     # -----------------------------------------------
     # 2*2 inputs -> 3*3 inputs (a)
-    intputs = torch.zeros((input_tensor.size(0), 1, 3, 3))
-    intputs[:, :, 0, 0] = input_tensor[:, :, 0, 0]
-    intputs[:, :, 0, 2] = input_tensor[:, :, 0, 1]
-    intputs[:, :, 2, 0] = input_tensor[:, :, 1, 0]
-    intputs[:, :, 2, 2] = input_tensor[:, :, 1, 1]
+    # intputs = torch.zeros((input_tensor.size(0), 1, 3, 3))
+    # intputs[:, :, 0, 0] = input_tensor[:, :, 0, 0]
+    # intputs[:, :, 0, 2] = input_tensor[:, :, 0, 1]
+    # intputs[:, :, 2, 0] = input_tensor[:, :, 1, 0]
+    # intputs[:, :, 2, 2] = input_tensor[:, :, 1, 1]
     # 2*2 inputs -> 5*5 inputs (b)
     # intputs = torch.zeros((input_tensor.size(0), 1, 3, 3))
     # intputs[:, :, 0, 0] = input_tensor[:, :, 0, 0]
@@ -84,16 +82,17 @@ with torch.no_grad():
     # intputs[:, :, 2, 2] = input_tensor[:, :, 1, 1]
     # =================
     # 2*2 inputs -> 5*5 inputs (d)
-    # intputs = torch.zeros((input_tensor.size(0), 1, 5, 5))
-    # intputs[:, :, 2, 2] = input_tensor[:, :, 0, 0]
-    # intputs[:, :, 2, 4] = input_tensor[:, :, 0, 1]
-    # intputs[:, :, 4, 2] = input_tensor[:, :, 1, 0]
-    # intputs[:, :, 4, 4] = input_tensor[:, :, 1, 1]
+    intputs = torch.zeros((input_tensor.size(0), 1, 5, 5))
+    intputs[:, :, 2, 2] = input_tensor[:, :, 0, 0]
+    intputs[:, :, 2, 4] = input_tensor[:, :, 0, 1]
+    intputs[:, :, 4, 2] = input_tensor[:, :, 1, 0]
+    intputs[:, :, 4, 4] = input_tensor[:, :, 1, 1]
 
+    NUM = 10000
     # Split input to not over GPU memory
-    B = input_tensor.size(0) // 100
+    B = input_tensor.size(0) // NUM
     LUT = []
-    for b in range(100):
+    for b in range(NUM):
         # Get Denoise LUT
         # kernel：
         #       X 0 X
@@ -104,13 +103,13 @@ with torch.no_grad():
         #     0   0   0
         #    nums 0 nums
         print("Processing: ", b)
-        if b == 99:
+        if b == NUM-1:
             raw_x = intputs[b*B:].numpy() / 255.
         else:
             raw_x = intputs[b*B:(b+1)*B].numpy() / 255.
         # raw_x = intputs.numpy() / 255.  # [N, 1, 3, 3]
         current_state = State.State((raw_x.shape[0], 1, intputs.size(2), intputs.size(3)), MOVE_RANGE)
-        agent = PixelWiseA3C_InnerState(model, optimizer, raw_x.shape[0], EPISODE_LEN, GAMMA)
+        agent = PixelWiseA3C_InnerState(model, optimizer, raw_x.shape[0], 1, GAMMA)
 
 
         label = copy.deepcopy(raw_x)
@@ -119,17 +118,16 @@ with torch.no_grad():
         reward = np.zeros(label.shape, label.dtype)
         sum_reward = 0
 
-        for t in range(EPISODE_LEN):
-            previous_image = np.clip(current_state.image.copy(), a_min=0., a_max=1.)
-            action, inner_state, action_prob = agent.act_and_train(current_state.tensor, reward, test=True)
+        for t in range(1):
+            action, policy = agent.act_and_train(current_state.tensor, reward, test=True)
             # print(paint_amap(action[0]))
+            # save action
             # LUT = copy.deepcopy(action[:, 1, 1])
-            LUT += [copy.deepcopy(action[:, 1, 1])]  # [3, 3]
+            # LUT += [copy.deepcopy(action[:, 1, 1])]  # [3, 3]
             # LUT += [copy.deepcopy(action[:, 2, 2])]  # [5, 5]
-            current_state.step(action, inner_state)
-            reward = np.square(label - previous_image) * 255 - \
-                     np.square(label - current_state.image) * 255
-            sum_reward += np.mean(reward) * np.power(GAMMA, t)
+            # save policy
+            LUT += [copy.deepcopy(policy[:, :, 2, 2])]  # [5, 5]
+            # current_state.step(action)
 
     LUTs = np.concatenate(LUT, 0)
     print("Resulting LUT size: ", LUTs.shape)

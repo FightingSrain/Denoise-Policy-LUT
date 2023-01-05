@@ -8,13 +8,13 @@ import numpy as np
 import glob
 import matplotlib.pyplot as plt
 from Policy_LUT.Transfer_LUTs import transfer_lut
-
+from scipy.special import softmax
 from config import config
 # import Train_Net.State as State
 # import Train_Net.State_Bilateral as State
 import Train_Net.State_Gaussian as State
 
-SAMPLING_INTERVAL = config.SAMPLING_INTERVAL        # N bit uniform sampling
+SAMPLING_INTERVAL = 2        # N bit uniform sampling
 SIGMA = config.SIGMA                  # Gaussian noise std
 L = 2 ** (8 - SAMPLING_INTERVAL) + 1
 q = 2**SAMPLING_INTERVAL
@@ -30,9 +30,11 @@ def paint_amap(acmap, num_action):
     # plt.pause(1)
     # plt.close()
 
-# Load LUT
-LUT = np.load(LUT_PATH).astype(np.float32).reshape(-1, 1)  # N(=(2^SAMPLING_INTERVAL + 1)^4D), 16(=r*r)
+# Load action LUT
+# LUT = np.load(LUT_PATH).astype(np.float32).reshape(-1, 1)  # N(=(2^SAMPLING_INTERVAL + 1)^4D), 1
 
+# Load action LUT
+LUT = np.load(LUT_PATH).astype(np.float32).reshape(-1, 9)  # N(=(2^SAMPLING_INTERVAL + 1)^4D), 9(=action num)
 
 # Test clean images
 files_gt = glob.glob(TEST_DIR + '*.png')
@@ -78,11 +80,45 @@ for ti, fn in enumerate(tqdm(files_gt)):
     t1 = time.time()
 
     for i in range(5):
-        # cv2.imshow('current_state.image_ins', (current_state.image[0, 0, :, :] * 255).astype(np.uint8))
+        cv2.imshow('current_state.image_ins', (current_state.image[0, 0, :, :] * 255).astype(np.uint8))
         # cv2.waitKey(0)
-        out_action = transfer_lut((current_state.image[0, 0, :, :]*255).astype(np.uint8),
-                                  LUT, h, w, q, L)
+        # out_action = transfer_lut((current_state.image[0, 0, :, :]*255).astype(np.uint8),
+        #                           LUT, h, w, q, L)
         # paint_amap(out_action, 10)
+
+        # rotation
+        ins1 = copy.deepcopy(current_state.image[0, 0, :, :] * 255)
+        out_policy1 = transfer_lut(ins1.astype(np.uint8),
+                                  LUT, ins1.shape[0], ins1.shape[1], q, L, 0)
+
+        ins2 = np.rot90(copy.deepcopy(current_state.image[0, 0, :, :] * 255), 1)
+        out_policy2 = transfer_lut(ins2.astype(np.uint8),
+                                   LUT, ins2.shape[0], ins2.shape[1], q, L, 3)
+
+
+        ins3 = copy.deepcopy(current_state.image[0, 0, :, :] * 255)
+        out_policy3 = transfer_lut((np.rot90(ins3, 2)).astype(np.uint8),
+                                      LUT, h, w, q, L, 2)
+
+
+        ins4 = np.rot90(copy.deepcopy(current_state.image[0, 0, :, :] * 255), 3)
+        out_policy4 = transfer_lut(ins4.astype(np.uint8),
+                                      LUT, ins4.shape[0], ins4.shape[1], q, L, 1)
+        # print(out_policy1[0, 0, 0, :])
+        # print(out_policy1.shape)
+        # print(out_policy2.shape)
+        # print(out_policy3.shape)
+        # print(out_policy4.shape)
+        # print("888")
+        print(((out_policy1 + out_policy2 +
+                      out_policy3 + out_policy4) / 4.)[0, 0, 0, :])
+        # out_action = np.argmax(softmax((out_policy1 + out_policy2 +
+        #               out_policy3 + out_policy4) / 4., axis=3), axis=3)
+        out_action = np.argmax((out_policy1 + out_policy2 +
+                                        out_policy3 + out_policy4) / 4., axis=3)
+        paint_amap(out_action, 10)
+        # print(out_action.shape)
+        # print("lll")
         current_state.step(torch.Tensor(out_action), inner_state)
         if i == 4:
             res = copy.deepcopy(current_state.image[0, 0, :, :])
@@ -96,8 +132,8 @@ for ti, fn in enumerate(tqdm(files_gt)):
         # print("---------------------------------")
         # print(current_state.image.shape)
         # print("------------")
-        # cv2.imshow('current_state.image', (current_state.image[0, 0, :, :]*255).astype(np.uint8))
-        # cv2.waitKey(0)
+        cv2.imshow('current_state.image', (current_state.image[0, 0, :, :]*255).astype(np.uint8))
+        cv2.waitKey(0)
 
     t2 = time.time()
     print('消耗时间：',(t2 - t1)*1000, "ms")
