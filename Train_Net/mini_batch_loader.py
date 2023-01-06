@@ -5,11 +5,12 @@ import cv2
 
 class MiniBatchLoader(object):
 
-    def __init__(self, train_path, test_path, image_dir_path, crop_size):
+    def __init__(self, train_path, test_path, val_path, image_dir_path, crop_size):
 
         # load data paths
         self.training_path_infos = self.read_paths(train_path, image_dir_path)
         self.testing_path_infos = self.read_paths(test_path, image_dir_path)
+        self.val_path_infos = self.read_paths(val_path, image_dir_path)
 
         self.crop_size = crop_size
 
@@ -41,11 +42,14 @@ class MiniBatchLoader(object):
     def load_training_data(self, indices):
         return self.load_data(self.training_path_infos, indices, augment=True)
 
+    def load_val_data(self, indices):
+        return self.load_data(self.val_path_infos, indices, validation=True)
+
     def load_testing_data(self, indices):
         return self.load_data(self.testing_path_infos, indices)
 
     # test ok
-    def load_data(self, path_infos, indices, augment=False):
+    def load_data(self, path_infos, indices, augment=False, validation=False):
         mini_batch_size = len(indices)
         in_channels = 1
 
@@ -76,6 +80,20 @@ class MiniBatchLoader(object):
                 y_offset = np.random.randint(rand_range_h)
                 img = img[y_offset:y_offset + self.crop_size, x_offset:x_offset + self.crop_size]
                 xs[i, 0, :, :] = (img / 255.).astype(np.float32)
+
+        elif validation:
+            xs = np.zeros((mini_batch_size, in_channels, self.crop_size, self.crop_size)).astype(np.float32)
+
+            for i, index in enumerate(indices):
+                path = path_infos[index]
+
+                img = cv2.imread(path, 0)
+                if img is None:
+                    raise RuntimeError("invalid image: {i}".format(i=path))
+                h, w = img.shape
+                xs[i, :, :, :] = cv2.resize(np.asarray(img),
+                                    (self.crop_size, self.crop_size),
+                                    interpolation=cv2.INTER_AREA).transpose(2, 0, 1) / 255.
 
         elif mini_batch_size == 1:
             for i, index in enumerate(indices):

@@ -30,7 +30,13 @@ SAMPLING_INTERVAL = 2
 
 
 model = PPO(N_ACTIONS).to(device)
-model.load_state_dict(torch.load("../GaussianFilterModel/GaussianModela10000_.pth"))
+model.load_state_dict(torch.load("../GaussianFilterModel/GaussianModela20000_.pth"))
+# m = torch.load("../GaussianFilterModel/GaussianModela30000_.pth")
+# for k in m.keys():
+#     print(k)
+# print(torch.load("../GaussianFilterModel/GaussianModela30000_.pth"))
+print("-----------------")
+
 optimizer = optim.Adam(model.parameters(), lr=LR)
 with torch.no_grad():
     model.eval()
@@ -107,6 +113,8 @@ with torch.no_grad():
             raw_x = intputs[b*B:].numpy() / 255.
         else:
             raw_x = intputs[b*B:(b+1)*B].numpy() / 255.
+        # print(raw_x)
+        # print("TTTTTTTT")
         # raw_x = intputs.numpy() / 255.  # [N, 1, 3, 3]
         current_state = State.State((raw_x.shape[0], 1, intputs.size(2), intputs.size(3)), MOVE_RANGE)
         agent = PixelWiseA3C_InnerState(model, optimizer, raw_x.shape[0], 1, GAMMA)
@@ -126,6 +134,8 @@ with torch.no_grad():
             # LUT += [copy.deepcopy(action[:, 1, 1])]  # [3, 3]
             # LUT += [copy.deepcopy(action[:, 2, 2])]  # [5, 5]
             # save policy
+            # print(policy.shape)
+            # print("***")
             LUT += [copy.deepcopy(policy[:, :, 2, 2])]  # [5, 5]
             # current_state.step(action)
 

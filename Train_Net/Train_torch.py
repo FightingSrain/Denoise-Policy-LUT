@@ -6,7 +6,7 @@ import numpy as np
 import torch.cuda
 import torch.optim as optim
 from tqdm import tqdm
-
+import glob
 # import State as State
 # import State_Bilateral as State
 import State_Gaussian as State
@@ -20,17 +20,19 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 TRAINING_DATA_PATH = "train.txt"
 TESTING_DATA_PATH = "train.txt"
+VAL_DATA_PATH = "train.txt"
 IMAGE_DIR_PATH = "..//"
 
 def main():
     model = PPO(config.N_ACTIONS).to(device)
-    # model.load_state_dict(torch.load("../GaussianFilterModel/GaussianModela28000_.pth"))
+    # model.load_state_dict(torch.load("../GaussianFilterModel/GaussianModela20000_.pth"))
     optimizer = optim.Adam(model.parameters(), lr=config.LR)
     i_index = 0
 
     mini_batch_loader = MiniBatchLoader(
         TRAINING_DATA_PATH,
         TESTING_DATA_PATH,
+        VAL_DATA_PATH,
         IMAGE_DIR_PATH,
         config.img_size)
 
@@ -39,6 +41,13 @@ def main():
 
     train_data_size = MiniBatchLoader.count_paths(TRAINING_DATA_PATH)
     indices = np.random.permutation(train_data_size)
+
+    val_data_size = MiniBatchLoader.count_paths(VAL_DATA_PATH)
+    indices_val = np.random.permutation(val_data_size)
+    r_val = indices_val[0: 12]
+    raw_val = mini_batch_loader.load_training_data(r_val)
+
+    val_PSNR = []
 
     for n_epi in tqdm(range(0, 9000000), ncols=70, initial=0):
 
@@ -88,6 +97,12 @@ def main():
 
         torch.cuda.empty_cache()
 
+        if n_epi % 100 == 0:
+            temp_psnr = agent.val(agent, State, raw_val, config.EPISODE_LEN)
+            val_PSNR.append(temp_psnr)
+            patin_val(val_PSNR)
+
+
         if n_epi % 1000 == 0:
             torch.save(model.state_dict(), "../GaussianFilterModel/GaussianModela{}_.pth".format(n_epi))
 
@@ -112,6 +127,12 @@ def paint_amap(acmap):
     # plt.show()
     plt.close('all')
 
+def patin_val(val_PSNR):
+    plt.plot(val_PSNR)
+    # plt.show()
+    plt.pause(1)
+    plt.close('all')
+
 def paint_scatter(act, img):
     act = np.asanyarray(act.squeeze(), dtype=np.uint8)
     img = np.asanyarray(img.squeeze()*255, dtype=np.uint8)
@@ -121,8 +142,8 @@ def paint_scatter(act, img):
     for i in range(9):
         # plt.scatter(img[act==i],
         #             img[act==i], c=color[i], marker='.')
-        plt.bar(img[act==i],
-                img[act==i], color=color[i])
+        plt.bar(img[act == i],
+                img[act == i], color=color[i])
     # plt.pause(1)
     # plt.close('all')
     plt.show()

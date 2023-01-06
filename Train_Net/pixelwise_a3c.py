@@ -1,10 +1,11 @@
 import copy
 import numpy as np
+import torch
 from torch.autograd import Variable
 import torch.nn.functional as F
 from torch import autograd
 from torch.distributions import Categorical
-import torch
+from config import config
 
 
 class PixelWiseA3C_InnerState():
@@ -136,7 +137,7 @@ class PixelWiseA3C_InnerState():
 
         self.t_start = self.t
 
-    def act_and_train(self, state, reward, test=False):
+    def act_and_train(self, state, reward, test=False, ensemble=False):
         statevar = torch.Tensor(state).cuda()
         self.past_rewards[self.t - 1] = torch.Tensor(reward).cuda()
 
@@ -145,7 +146,10 @@ class PixelWiseA3C_InnerState():
 
         self.past_states[self.t] = statevar
         if test:
-            pout, vout, inner_state = self.model.pi_and_v(statevar)
+            if ensemble:
+                pout, vout, inner_state = self.model(statevar)
+            else:
+                pout, vout, inner_state = self.model.pi_and_v(statevar)
             n, num_actions, h, w = pout.shape
         else:
             pout, vout, inner_state = self.model(statevar)
@@ -189,3 +193,30 @@ class PixelWiseA3C_InnerState():
         else:
             statevar = copy.deepcopy(state)
             self.update(statevar)
+
+
+    def val(self, agent, state, raw_val, test_num):
+        self.model.eval()
+
+        current_state = state.State((config.BATCH_SIZE, 1, 63, 63), config.MOVE_RANGE)
+        reward = np.zeros((config.BATCH_SIZE, 1, 63, 63))
+
+        raw_n = np.random.normal(0, config.sigma, raw_val.shape).astype(raw_val.dtype) / 255.
+        ins_noisy = np.clip(raw_val + raw_n, a_min=0., a_max=1.)
+        current_state.reset(raw_val, raw_n)
+        res = None
+        for i in range(test_num):
+
+            action, policy = agent.act_and_train(current_state.tensor,
+                                                 reward,
+                                                 test=True,
+                                                 ensemble=True)
+            current_state.step(action)
+            if i == test_num - 1:
+                res = copy.deepcopy(current_state.image[:, 0:1, :, :])
+                break
+        mse = np.mean((res - raw_val) ** 2)
+        psnr = 10 * np.log10(1. / mse)
+
+        self.model.train()
+        return psnr

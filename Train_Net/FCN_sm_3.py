@@ -16,6 +16,10 @@ class PPO(nn.Module):
         self.weight = nn.Parameter(data=kernel, requires_grad=True)
         self.weight[:, :, 0:1, :].detach()
         self.weight[:, :, :, 0:1].detach()
+        bias = torch.zeros((64))
+        self.bias = nn.Parameter(data=bias, requires_grad=True)
+
+
         self.conv2 = nn.Conv2d(64, 64, 1, stride=1, padding=0, dilation=1)
         self.conv3 = nn.Conv2d(64, 64, 1, stride=1, padding=0, dilation=1)
         self.conv4 = nn.Conv2d(64, 64, 1, stride=1, padding=0, dilation=1)
@@ -45,7 +49,7 @@ class PPO(nn.Module):
         x_in = x[:, 0:1, :, :].reshape(B * 1, 1, H, W)
 
         # x_in = torch.rot90(x_in, 1, [2,3])
-        x = F.conv2d(x_in, self.weight, stride=1, padding=1, groups=1)
+        x = F.conv2d(x_in, self.weight, stride=1, padding=1, groups=1, bias=self.bias)
         x = self.conv2(F.relu(x))
         x = self.conv3(F.relu(x))
         x = self.conv4(F.relu(x))

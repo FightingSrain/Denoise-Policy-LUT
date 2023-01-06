@@ -24,7 +24,8 @@ def transfer_lut(img_noisy, LUT, h, w, q, L, rot):
     # img_b1 = img_noisy[:, 0:0 + h, 2:2 + w] // q
     # img_c1 = img_noisy[:, 2:2 + h, 0:0 + w] // q
     # img_d1 = img_noisy[:, 2:2 + h, 2:2 + w] // q
-
+    print(img_noisy.shape)
+    print(q, L)
     # (d) 5*5 policy
     # img_noisy = np.pad(img_noisy, ((2, 2), (2, 2)), mode='reflect')
     img_noisy = np.pad(img_noisy, ((2, 2), (2, 2)), mode='constant')
@@ -34,6 +35,15 @@ def transfer_lut(img_noisy, LUT, h, w, q, L, rot):
     img_b1 = img_noisy[:, 2:2 + h, 4:4 + w] // q
     img_c1 = img_noisy[:, 4:4 + h, 2:2 + w] // q
     img_d1 = img_noisy[:, 4:4 + h, 4:4 + w] // q
+
+    print(img_a1.shape)
+    print(img_b1.shape)
+    print(img_c1.shape)
+    print(img_d1.shape)
+
+    # print(img_noisy[:, 2:2 + h, 2:2 + w])
+    print("********")
+
     # output action
     # out_action = LUT[img_a1.flatten().astype(np.int_) * L * L * L +
     #                  img_b1.flatten().astype(np.int_) * L * L +
