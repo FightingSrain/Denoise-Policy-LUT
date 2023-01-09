@@ -7,9 +7,9 @@ import torch.cuda
 import torch.optim as optim
 from tqdm import tqdm
 import glob
-# import State as State
+import State as State
 # import State_Bilateral as State
-import State_Gaussian as State
+# import State_Gaussian as State
 # from FCN import *
 from FCN_sm_4 import *
 from mini_batch_loader import MiniBatchLoader
@@ -39,9 +39,11 @@ def main():
     current_state = State.State((config.BATCH_SIZE, 1, 63, 63), config.MOVE_RANGE)
     agent = PixelWiseA3C_InnerState(model, optimizer, config.BATCH_SIZE, config.EPISODE_LEN, config.GAMMA)
 
+    # train dataset
     train_data_size = MiniBatchLoader.count_paths(TRAINING_DATA_PATH)
     indices = np.random.permutation(train_data_size)
 
+    # val dataset
     val_data_size = MiniBatchLoader.count_paths(VAL_DATA_PATH)
     indices_val = np.random.permutation(val_data_size)
     r_val = indices_val[0: 12]
@@ -56,7 +58,7 @@ def main():
 
         label = copy.deepcopy(raw_x)
         raw_n = np.random.normal(0, config.sigma, label.shape).astype(label.dtype) / 255.
-        ins_noisy = np.clip(label + raw_n, a_min=0., a_max=1.)
+        # ins_noisy = np.clip(label + raw_n, a_min=0., a_max=1.)
         current_state.reset(raw_x, raw_n)
         reward = np.zeros(label.shape, label.dtype)
         sum_reward = 0
@@ -77,7 +79,7 @@ def main():
                 cv2.waitKey(1)
 
             previous_image = np.clip(current_state.image.copy(), a_min=0., a_max=1.)
-            action, inner_state, action_prob, tst_act = agent.act_and_train(current_state.tensor, reward)
+            action, action_prob, tst_act = agent.act_and_train(current_state.tensor, reward)
 
             if n_epi % 150 == 0:
                 print(action[10])
@@ -86,8 +88,8 @@ def main():
                 # paint_amap(action[10])
                 # paint_scatter(tst_act[10], current_state.image[10])
 
-            current_state.step(action, inner_state)
-            # 是否可以自监督训练，即不需要label
+            current_state.step(action)
+
             reward = np.square(label - previous_image) * 255 - \
                      np.square(label - current_state.image) * 255
             # reward = -np.square(current_state.image - label) * 255
@@ -97,14 +99,14 @@ def main():
 
         torch.cuda.empty_cache()
 
-        if n_epi % 100 == 0:
+        if n_epi % 100 == 0 and n_epi != 0:
             temp_psnr = agent.val(agent, State, raw_val, config.EPISODE_LEN)
             val_PSNR.append(temp_psnr)
             patin_val(val_PSNR)
 
-
         if n_epi % 1000 == 0:
-            torch.save(model.state_dict(), "../GaussianFilterModel/GaussianModela{}_.pth".format(n_epi))
+            # torch.save(model.state_dict(), "../GaussianFilterModel/GaussianModela{}_.pth".format(n_epi))
+            torch.save(model.state_dict(), "../MixFilterModel/MixModela{}_.pth".format(n_epi))
 
         if i_index + config.BATCH_SIZE >= train_data_size:
             i_index = 0
@@ -120,7 +122,6 @@ def main():
 
 def paint_amap(acmap):
     image = np.asanyarray(acmap.squeeze(), dtype=np.uint8)
-    # print(image)
     plt.imshow(image, vmin=1, vmax=9)
     plt.colorbar()
     plt.pause(1)
@@ -129,8 +130,9 @@ def paint_amap(acmap):
 
 def patin_val(val_PSNR):
     plt.plot(val_PSNR)
+    plt.grid()
     # plt.show()
-    plt.pause(1)
+    plt.pause(2)
     plt.close('all')
 
 def paint_scatter(act, img):
@@ -140,10 +142,10 @@ def paint_scatter(act, img):
     color = ['red', 'green', 'blue', 'yellow', 'black', 'purple', 'orange', 'pink', 'gray']
     img = img.reshape(63*63)
     for i in range(9):
-        # plt.scatter(img[act==i],
-        #             img[act==i], c=color[i], marker='.')
-        plt.bar(img[act == i],
-                img[act == i], color=color[i])
+        plt.scatter(img[act==i],
+                    img[act==i], c=color[i], marker='.')
+        # plt.bar(img[act == i],
+        #         img[act == i], color=color[i])
     # plt.pause(1)
     # plt.close('all')
     plt.show()

@@ -30,7 +30,7 @@ SAMPLING_INTERVAL = 2
 
 
 model = PPO(N_ACTIONS).to(device)
-model.load_state_dict(torch.load("../GaussianFilterModel/GaussianModela20000_.pth"))
+model.load_state_dict(torch.load("../GaussianFilterModel/GaussianModela43000_.pth"))
 # m = torch.load("../GaussianFilterModel/GaussianModela30000_.pth")
 # for k in m.keys():
 #     print(k)
@@ -68,11 +68,11 @@ with torch.no_grad():
     print("Input size: ", input_tensor.size())
     # -----------------------------------------------
     # 2*2 inputs -> 3*3 inputs (a)
-    # intputs = torch.zeros((input_tensor.size(0), 1, 3, 3))
-    # intputs[:, :, 0, 0] = input_tensor[:, :, 0, 0]
-    # intputs[:, :, 0, 2] = input_tensor[:, :, 0, 1]
-    # intputs[:, :, 2, 0] = input_tensor[:, :, 1, 0]
-    # intputs[:, :, 2, 2] = input_tensor[:, :, 1, 1]
+    intputs = torch.zeros((input_tensor.size(0), 1, 3, 3))
+    intputs[:, :, 0, 0] = input_tensor[:, :, 0, 0]
+    intputs[:, :, 0, 2] = input_tensor[:, :, 0, 1]
+    intputs[:, :, 2, 0] = input_tensor[:, :, 1, 0]
+    intputs[:, :, 2, 2] = input_tensor[:, :, 1, 1]
     # 2*2 inputs -> 5*5 inputs (b)
     # intputs = torch.zeros((input_tensor.size(0), 1, 3, 3))
     # intputs[:, :, 0, 0] = input_tensor[:, :, 0, 0]
@@ -88,11 +88,11 @@ with torch.no_grad():
     # intputs[:, :, 2, 2] = input_tensor[:, :, 1, 1]
     # =================
     # 2*2 inputs -> 5*5 inputs (d)
-    intputs = torch.zeros((input_tensor.size(0), 1, 5, 5))
-    intputs[:, :, 2, 2] = input_tensor[:, :, 0, 0]
-    intputs[:, :, 2, 4] = input_tensor[:, :, 0, 1]
-    intputs[:, :, 4, 2] = input_tensor[:, :, 1, 0]
-    intputs[:, :, 4, 4] = input_tensor[:, :, 1, 1]
+    # intputs = torch.zeros((input_tensor.size(0), 1, 5, 5))
+    # intputs[:, :, 2, 2] = input_tensor[:, :, 0, 0]
+    # intputs[:, :, 2, 4] = input_tensor[:, :, 0, 1]
+    # intputs[:, :, 4, 2] = input_tensor[:, :, 1, 0]
+    # intputs[:, :, 4, 4] = input_tensor[:, :, 1, 1]
 
     NUM = 10000
     # Split input to not over GPU memory
@@ -134,9 +134,10 @@ with torch.no_grad():
             # LUT += [copy.deepcopy(action[:, 1, 1])]  # [3, 3]
             # LUT += [copy.deepcopy(action[:, 2, 2])]  # [5, 5]
             # save policy
-            # print(policy.shape)
-            # print("***")
-            LUT += [copy.deepcopy(policy[:, :, 2, 2])]  # [5, 5]
+            print(policy.shape)
+            print("***")
+            LUT += [copy.deepcopy(policy[:, :, 0, 0])]  # [3, 3]
+            # LUT += [copy.deepcopy(policy[:, :, 2, 2])]  # [5, 5]
             # current_state.step(action)
 
     LUTs = np.concatenate(LUT, 0)

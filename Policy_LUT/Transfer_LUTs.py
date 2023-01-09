@@ -16,33 +16,24 @@ LUT [N,]
 q = 2**SAMPLING_INTERVAL
 L = 2 ** (8 - SAMPLING_INTERVAL) + 1
 """
-def transfer_lut(img_noisy, LUT, h, w, q, L, rot):
+def transfer_lut(img_noisy, LUT, h, w, num_act, q, L, rot):
     # (a) 3*3
-    # img_noisy = np.pad(img_noisy, ((1, 1), (1, 1)), mode='reflect')
-    # img_noisy = np.expand_dims(img_noisy, 0)
-    # img_a1 = img_noisy[:, 0:0 + h, 0:0 + w] // q
-    # img_b1 = img_noisy[:, 0:0 + h, 2:2 + w] // q
-    # img_c1 = img_noisy[:, 2:2 + h, 0:0 + w] // q
-    # img_d1 = img_noisy[:, 2:2 + h, 2:2 + w] // q
-    print(img_noisy.shape)
-    print(q, L)
+    img_noisy = np.pad(img_noisy, ((0, 2), (0, 2)), mode='reflect')
+    img_noisy = np.expand_dims(img_noisy, 0)
+    img_a1 = img_noisy[:, 0:0 + h, 0:0 + w] // q
+    img_b1 = img_noisy[:, 0:0 + h, 2:2 + w] // q
+    img_c1 = img_noisy[:, 2:2 + h, 0:0 + w] // q
+    img_d1 = img_noisy[:, 2:2 + h, 2:2 + w] // q
+    # print(img_noisy.shape)
+    # print(q, L)
     # (d) 5*5 policy
     # img_noisy = np.pad(img_noisy, ((2, 2), (2, 2)), mode='reflect')
-    img_noisy = np.pad(img_noisy, ((2, 2), (2, 2)), mode='constant')
-    img_noisy = np.expand_dims(img_noisy, 0)
-
-    img_a1 = img_noisy[:, 2:2 + h, 2:2 + w] // q
-    img_b1 = img_noisy[:, 2:2 + h, 4:4 + w] // q
-    img_c1 = img_noisy[:, 4:4 + h, 2:2 + w] // q
-    img_d1 = img_noisy[:, 4:4 + h, 4:4 + w] // q
-
-    print(img_a1.shape)
-    print(img_b1.shape)
-    print(img_c1.shape)
-    print(img_d1.shape)
-
-    # print(img_noisy[:, 2:2 + h, 2:2 + w])
-    print("********")
+    # img_noisy = np.pad(img_noisy, ((2, 2), (2, 2)), mode='constant')
+    # img_noisy = np.expand_dims(img_noisy, 0)
+    # img_a1 = img_noisy[:, 2:2 + h, 2:2 + w] // q
+    # img_b1 = img_noisy[:, 2:2 + h, 4:4 + w] // q
+    # img_c1 = img_noisy[:, 4:4 + h, 2:2 + w] // q
+    # img_d1 = img_noisy[:, 4:4 + h, 4:4 + w] // q
 
     # output action
     # out_action = LUT[img_a1.flatten().astype(np.int_) * L * L * L +
@@ -56,7 +47,7 @@ def transfer_lut(img_noisy, LUT, h, w, q, L, rot):
                      img_b1.flatten().astype(np.int_) * L * L +
                      img_c1.flatten().astype(np.int_) * L +
                      img_d1.flatten().astype(np.int_), :]. \
-        reshape((img_a1.shape[0], img_a1.shape[1], img_a1.shape[2], LUT.shape[1]))
+        reshape((1, h, w, num_act))
     out_policy = np.rot90(out_policy, rot, axes=(1, 2))
     return out_policy
 

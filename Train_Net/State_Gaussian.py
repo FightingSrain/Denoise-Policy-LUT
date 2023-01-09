@@ -13,14 +13,13 @@ class State():
         self.image = np.clip(x + n, a_min=0., a_max=1.)
         self.pre_img = copy.deepcopy(self.image)
         size = self.image.shape
-        prev_state = np.zeros((size[0], 64, size[2], size[3]), dtype=np.float32)
-        self.tensor = np.concatenate([self.image, prev_state], axis=1)
+        self.tensor = self.image
 
     # def set(self, x):
     #     self.image = x
     #     self.tensor[:, :self.image.shape[1], :, :] = self.image
 
-    def step(self, act, inner_state=None):
+    def step(self, act):
         act = act.numpy()
         neutral = (self.move_range - 1) / 2.
         move = act.astype(np.float32)
@@ -70,4 +69,3 @@ class State():
 
         self.image = np.clip(self.image, a_min=0., a_max=1.)
         self.tensor[:, :self.image.shape[1], :, :] = self.image
-        self.tensor[:, -64:, :, :] = inner_state

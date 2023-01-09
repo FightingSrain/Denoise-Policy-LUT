@@ -147,12 +147,12 @@ class PixelWiseA3C_InnerState():
         self.past_states[self.t] = statevar
         if test:
             if ensemble:
-                pout, vout, inner_state = self.model(statevar)
+                pout, vout = self.model(statevar)
             else:
-                pout, vout, inner_state = self.model.pi_and_v(statevar)
+                pout, vout = self.model.pi_and_v(statevar)
             n, num_actions, h, w = pout.shape
         else:
-            pout, vout, inner_state = self.model(statevar)
+            pout, vout = self.model(statevar)
             n, num_actions, h, w = pout.shape
 
             p_trans = pout.permute([0, 2, 3, 1]).contiguous().view(-1, pout.shape[1])
@@ -182,7 +182,6 @@ class PixelWiseA3C_InnerState():
             return tst_act, pout.detach().cpu().numpy()
         else:
             return action.view(n, h, w).detach().cpu(), \
-               inner_state.detach().cpu(), \
                torch.exp(log_action_prob).squeeze(1).detach().cpu(), \
                tst_act
 
@@ -202,7 +201,7 @@ class PixelWiseA3C_InnerState():
         reward = np.zeros((config.BATCH_SIZE, 1, 63, 63))
 
         raw_n = np.random.normal(0, config.sigma, raw_val.shape).astype(raw_val.dtype) / 255.
-        ins_noisy = np.clip(raw_val + raw_n, a_min=0., a_max=1.)
+        # ins_noisy = np.clip(raw_val + raw_n, a_min=0., a_max=1.)
         current_state.reset(raw_val, raw_n)
         res = None
         for i in range(test_num):
