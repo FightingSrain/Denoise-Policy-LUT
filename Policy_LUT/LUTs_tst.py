@@ -13,9 +13,9 @@ from Policy_LUT.Transfer_LUTs import transfer_lut
 from scipy.special import softmax
 from config import config
 from utils import *
-# import Train_Net.State as State
+import Train_Net.State as State
 # import Train_Net.State_Bilateral as State
-import Train_Net.State_Gaussian as State
+# import Train_Net.State_Gaussian as State
 from collections import Counter
 
 
@@ -24,7 +24,7 @@ SIGMA = config.SIGMA                  # Gaussian noise std
 L = 2 ** (8 - SAMPLING_INTERVAL) + 1
 q = 2**SAMPLING_INTERVAL
 
-LUT_PATH = "../LUTs/sample_{}_LUTs.npy".format(SAMPLING_INTERVAL)    # Trained SR net params
+LUT_PATH = "../Mix_LUTs/sample_{}_LUTs.npy".format(SAMPLING_INTERVAL)    # Trained SR net params
 # TEST_DIR = '../img_tst/'      # Test images
 TEST_DIR = 'D://Dataset/BSD68/'      # Test images
 # TEST_DIR = 'D://Dataset/Set12/'      # Test images
@@ -138,6 +138,7 @@ for ti, fn in enumerate(tqdm(files_gt)):
         if i == 4:
             res = copy.deepcopy(current_state.image[0, 0, :, :])
             # cv2.imwrite("../res_img/BSD68/res{}.png".format(ti), (res * 255).astype(np.uint8))
+            cv2.imwrite("../res_img/Mix_BSD68/res{}.png".format(ti), (res * 255).astype(np.uint8))
             # cv2.imwrite("../res_img/Bilateral_Set12/res{}.png".format(ti),
             #             cv2.bilateralFilter((ins_noisy[0, 0, :, :] * 255).astype(np.uint8),
             #                                 d=5, sigmaColor=100, sigmaSpace=20)

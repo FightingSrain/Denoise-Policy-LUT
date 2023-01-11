@@ -18,9 +18,16 @@ class PPO(nn.Module):
         self.conv3 = nn.Conv2d(64, 64, 1, stride=1, padding=0, dilation=1)
         self.conv4 = nn.Conv2d(64, 64, 1, stride=1, padding=0, dilation=1)
 
-        self.conv4p = nn.Conv2d(64, 64, 1, stride=1, padding=0, dilation=1)
-        self.conv5p = nn.Conv2d(64, 64, 1, stride=1, padding=0, dilation=1)
-        self.conv6p = nn.Conv2d(64, self.action_n, 1, stride=1, padding=0, dilation=1)
+        self.conv4pd = nn.Conv2d(64, 64, 1, stride=1, padding=0, dilation=1)
+        self.conv5pd = nn.Conv2d(64, 64, 1, stride=1, padding=0, dilation=1)
+        self.conv6pd = nn.Conv2d(64, self.action_n, 1, stride=1, padding=0, dilation=1)
+
+        self.conv4pc = nn.Conv2d(64, 64, 1, stride=1, padding=0, dilation=1)
+        self.conv5pc = nn.Conv2d(64, 64, 1, stride=1, padding=0, dilation=1)
+        self.mean = nn.Conv2d(64, self.action_n, 1, stride=1, padding=0, dilation=1)
+        self.logstd = nn.Parameter(torch.zeros(1, self.action_n), requires_grad=True)
+
+
 
         self.conv4v = nn.Conv2d(64, 64, 1, stride=1, padding=0, dilation=1)
         self.conv5v = nn.Conv2d(64, 64, 1, stride=1, padding=0, dilation=1)
@@ -52,12 +59,18 @@ class PPO(nn.Module):
         x4 = F.relu(x4)
 
 
-        p1 = self.conv4p(x4)
-        p1 = F.relu(p1)
-        p2 = self.conv5p(p1)
-        p2 = F.relu(p2)
-        # policy = F.softmax(self.conv6p(F.relu(p)), dim=1)
-        policy = self.conv6p(p2)
+        pd1 = self.conv4pd(x4)
+        pd1 = F.relu(pd1)
+        pd2 = self.conv5pd(pd1)
+        pd2 = F.relu(pd2)
+        Dpolicy = self.conv6pdd(pd2)
+
+        pc1 = self.conv4pc(x4)
+        pc1 = F.relu(pc1)
+        pc2 = self.conv5pc(pc1)
+        pc2 = F.relu(pc2)
+        mean = self.mean(pc2)
+        logstd = self.logstd(pc2)
 
         v1 = self.conv4v(x4)
         v1 = F.relu(v1)
@@ -65,29 +78,29 @@ class PPO(nn.Module):
         v2 = F.relu(v2)
         value = self.conv6v(v2)
 
-        return policy, value
+        return Dpolicy, mean, logstd, value
 
     def forward(self, x):
         x1 = copy.deepcopy(x)
         x1[:, 0:1, :, :] = torch.rot90(x1[:, 0:1, :, :], 1, [2, 3])
-        policy1, value1 = self.pi_and_v(F.pad(x1, (0, 2, 0, 2), mode='reflect'))
+        policy1, mean1, logstd1, value1 = self.pi_and_v(F.pad(x1, (0, 2, 0, 2), mode='reflect'))
         policy1 = torch.rot90(policy1, 3, [2, 3])
         value1 = torch.rot90(value1, 3, [2, 3])
 
         x2 = copy.deepcopy(x)
         x2[:, 0:1, :, :] = torch.rot90(x2[:, 0:1, :, :], 2, [2, 3])
-        policy2, value2 = self.pi_and_v(F.pad(x2, (0, 2, 0, 2), mode='reflect'))
+        policy2, mean2, logstd2, value2 = self.pi_and_v(F.pad(x2, (0, 2, 0, 2), mode='reflect'))
         policy2 = torch.rot90(policy2, 2, [2, 3])
         value2 = torch.rot90(value2, 2, [2, 3])
 
         x3 = copy.deepcopy(x)
         x3[:, 0:1, :, :] = torch.rot90(x3[:, 0:1, :, :], 3, [2, 3])
-        policy3, value3 = self.pi_and_v(F.pad(x3, (0, 2, 0, 2), mode='reflect'))
+        policy3, mean3, logstd3, value3 = self.pi_and_v(F.pad(x3, (0, 2, 0, 2), mode='reflect'))
         policy3 = torch.rot90(policy3, 1, [2, 3])
         value3 = torch.rot90(value3, 1, [2, 3])
 
         x4 = copy.deepcopy(x)
-        policy4, value4 = self.pi_and_v(F.pad(x4, (0, 2, 0, 2), mode='reflect'))
+        policy4, mean4, logstd4, value4 = self.pi_and_v(F.pad(x4, (0, 2, 0, 2), mode='reflect'))
 
         policy = F.softmax((policy1 + policy2 + policy3 + policy4) / 4., dim=1)
         # policy = (policy1 + policy2 + policy3 + policy4) / 4.

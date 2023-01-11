@@ -30,8 +30,9 @@ SAMPLING_INTERVAL = 2
 
 
 model = PPO(N_ACTIONS).to(device)
-model.load_state_dict(torch.load("../GaussianFilterModel/GaussianModela43000_.pth"))
-# m = torch.load("../GaussianFilterModel/GaussianModela30000_.pth")
+# model.load_state_dict(torch.load("../GaussianFilterModel/GaussianModela30000_.pth"))
+model.load_state_dict(torch.load("../MixFilterModel/MixModela30000_.pth"))
+# model = torch.load("../MixFilterModel/MixModela30000_.pth")
 # for k in m.keys():
 #     print(k)
 # print(torch.load("../GaussianFilterModel/GaussianModela30000_.pth"))
@@ -142,4 +143,4 @@ with torch.no_grad():
 
     LUTs = np.concatenate(LUT, 0)
     print("Resulting LUT size: ", LUTs.shape)
-    np.save("../LUTs/sample_{}_LUTs".format(SAMPLING_INTERVAL), LUTs)
+    np.save("../Mix_LUTs/sample_{}_LUTs".format(SAMPLING_INTERVAL), LUTs)
