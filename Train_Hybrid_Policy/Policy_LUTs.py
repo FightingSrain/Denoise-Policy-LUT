@@ -4,13 +4,13 @@ import cv2
 import matplotlib.pyplot as plt
 import torch.optim as optim
 
-from Train_Discrete_Policy import State_Gaussian as State
+from Train_Hybrid_Policy import State_Gaussian as State
 # from FCN import *
-# from Train_Net.FCN_sm import *
-# from Train_Net.FCN_sm_2 import *
-# from Train_Net.FCN_sm_3 import *
-from Train_Discrete_Policy.FCN_sm_4 import *
-from Train_Discrete_Policy.pixelwise_a3c import *
+# from Train_Hybrid_Policy.FCN_sm import *
+# from Train_Hybrid_Policy.FCN_sm_2 import *
+# from Train_Hybrid_Policy.FCN_sm_3 import *
+from Train_Hybrid_Policy.FCN_sm_4 import *
+from Train_Hybrid_Policy.pixelwise_a3c import *
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 def paint_amap(acmap):
@@ -24,14 +24,13 @@ def paint_amap(acmap):
 MOVE_RANGE = 3
 MAX_EPISODE = 100000
 GAMMA = 0.95
-N_ACTIONS = 9
+N_ACTIONS = 7
 LR = 0.0001
 SAMPLING_INTERVAL = 2
 
 
 model = PPO(N_ACTIONS).to(device)
-# model.load_state_dict(torch.load("../GaussianFilterModel/GaussianModela30000_.pth"))
-model.load_state_dict(torch.load("../MixFilterModel/MixModela30000_.pth"))
+model.load_state_dict(torch.load("./GaussianFilterHybridMax/GaussianModela16100_33.482850886408976_.pth"))
 # model = torch.load("../MixFilterModel/MixModela30000_.pth")
 # for k in m.keys():
 #     print(k)
@@ -99,6 +98,7 @@ with torch.no_grad():
     # Split input to not over GPU memory
     B = input_tensor.size(0) // NUM
     LUT = []
+    LUT = []
     for b in range(NUM):
         # Get Denoise LUT
         # kernel：
@@ -128,19 +128,25 @@ with torch.no_grad():
         sum_reward = 0
 
         for t in range(1):
-            action, policy = agent.act_and_train(current_state.tensor, reward, test=True)
+            action, action_par, policy = agent.act_and_train(current_state.tensor, reward, test=True)
             # print(paint_amap(action[0]))
             # save action
             # LUT = copy.deepcopy(action[:, 1, 1])
             # LUT += [copy.deepcopy(action[:, 1, 1])]  # [3, 3]
             # LUT += [copy.deepcopy(action[:, 2, 2])]  # [5, 5]
             # save policy
-            print(policy.shape)
-            print("***")
-            LUT += [copy.deepcopy(policy[:, :, 0, 0])]  # [3, 3]
+            # print(policy.shape)
+            # print("***")
+            # LUT += [copy.deepcopy(policy[:, :, 0, 0]), action_par]  # [3, 3]
+            LUT += [np.concatenate([policy.squeeze(), action_par], axis=1)]
+            print(np.concatenate([policy.squeeze(), action_par], axis=1).shape)
+            print(policy[:, :, 0, 0].shape)
+            print(action_par.shape)
+            print("*********")
             # LUT += [copy.deepcopy(policy[:, :, 2, 2])]  # [5, 5]
-            # current_state.step(action)
+
+
 
     LUTs = np.concatenate(LUT, 0)
     print("Resulting LUT size: ", LUTs.shape)
-    np.save("../Mix_LUTs/sample_{}_LUTs".format(SAMPLING_INTERVAL), LUTs)
+    np.save("./Hybrid_LUTs/sample_{}_LUTs".format(SAMPLING_INTERVAL), LUTs)

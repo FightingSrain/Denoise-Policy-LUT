@@ -45,6 +45,10 @@ class PPO(nn.Module):
                 m.weight.data.normal_(1.0, 0.02)
                 m.bias.data.fill_(0)
 
+    def parse_p(self, u_out):
+        p = torch.mean(u_out.view(u_out.shape[0], u_out.shape[1], -1), dim=2)
+        return p
+
     def pi_and_v(self, x):
         B, _, H, W = x.size()
         x_in = x.reshape(B, 1, H, W)
@@ -63,14 +67,14 @@ class PPO(nn.Module):
         pd1 = F.relu(pd1)
         pd2 = self.conv5pd(pd1)
         pd2 = F.relu(pd2)
-        Dpolicy = self.conv6pdd(pd2)
+        Dpolicy = self.conv6pd(pd2)
 
         pc1 = self.conv4pc(x4)
         pc1 = F.relu(pc1)
         pc2 = self.conv5pc(pc1)
         pc2 = F.relu(pc2)
-        mean = self.mean(pc2)
-        logstd = self.logstd(pc2)
+        mean = self.parse_p(self.mean(pc2))
+        logstd = self.logstd.expand([B, self.action_n])
 
         v1 = self.conv4v(x4)
         v1 = F.relu(v1)
@@ -80,32 +84,30 @@ class PPO(nn.Module):
 
         return Dpolicy, mean, logstd, value
 
+    def ensemble_pi_and_v(self, x, rot1=0, rot2=0, pad=2):
+        if rot1 == 0 and rot2 == 0:
+            policy, mean, logstd, value = self.pi_and_v(F.pad(x, (0, pad, 0, pad), mode='reflect'))
+        else:
+            x = torch.rot90(x, rot1, [2, 3])
+            policy, mean, logstd, value = self.pi_and_v(F.pad(x, (0, pad, 0, pad), mode='reflect'))
+            policy = torch.rot90(policy, rot2, [2, 3])
+            value = torch.rot90(value, rot2, [2, 3])
+            # mean = torch.rot90(mean, rot2, [2, 3])
+            # logstd = torch.rot90(logstd, rot2, [2, 3])
+        return policy, mean, logstd, value
+
     def forward(self, x):
-        x1 = copy.deepcopy(x)
-        x1[:, 0:1, :, :] = torch.rot90(x1[:, 0:1, :, :], 1, [2, 3])
-        policy1, mean1, logstd1, value1 = self.pi_and_v(F.pad(x1, (0, 2, 0, 2), mode='reflect'))
-        policy1 = torch.rot90(policy1, 3, [2, 3])
-        value1 = torch.rot90(value1, 3, [2, 3])
-
-        x2 = copy.deepcopy(x)
-        x2[:, 0:1, :, :] = torch.rot90(x2[:, 0:1, :, :], 2, [2, 3])
-        policy2, mean2, logstd2, value2 = self.pi_and_v(F.pad(x2, (0, 2, 0, 2), mode='reflect'))
-        policy2 = torch.rot90(policy2, 2, [2, 3])
-        value2 = torch.rot90(value2, 2, [2, 3])
-
-        x3 = copy.deepcopy(x)
-        x3[:, 0:1, :, :] = torch.rot90(x3[:, 0:1, :, :], 3, [2, 3])
-        policy3, mean3, logstd3, value3 = self.pi_and_v(F.pad(x3, (0, 2, 0, 2), mode='reflect'))
-        policy3 = torch.rot90(policy3, 1, [2, 3])
-        value3 = torch.rot90(value3, 1, [2, 3])
-
-        x4 = copy.deepcopy(x)
-        policy4, mean4, logstd4, value4 = self.pi_and_v(F.pad(x4, (0, 2, 0, 2), mode='reflect'))
+        policy1, mean1, logstd1, value1 = self.ensemble_pi_and_v(x, rot1=1, rot2=3, pad=2)
+        policy2, mean2, logstd2, value2 = self.ensemble_pi_and_v(x, rot1=2, rot2=2, pad=2)
+        policy3, mean3, logstd3, value3 = self.ensemble_pi_and_v(x, rot1=3, rot2=1, pad=2)
+        policy4, mean4, logstd4, value4 = self.ensemble_pi_and_v(x, rot1=0, rot2=0, pad=2)
 
         policy = F.softmax((policy1 + policy2 + policy3 + policy4) / 4., dim=1)
         # policy = (policy1 + policy2 + policy3 + policy4) / 4.
         value = (value1 + value2 + value3 + value4) / 4.
-        return policy, value
+        mean = (mean1 + mean2 + mean3 + mean4) / 4.
+        logstd = (logstd1 + logstd2 + logstd3 + logstd4) / 4.
+        return policy, mean, logstd, value
 
 
 # fcn = PPO(10)

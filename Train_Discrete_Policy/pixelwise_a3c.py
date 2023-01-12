@@ -91,8 +91,8 @@ class PixelWiseA3C_InnerState():
         if statevar is None:
             R = torch.zeros(self.batch_size, 1, 63, 63).cuda()
         else:
-            # _, vout, _ = self.model.pi_and_v(statevar)
-            _, vout, _ = self.model(statevar)
+            # _, vout = self.model.pi_and_v(statevar)
+            _, vout = self.model(statevar)
             R = vout.detach()
         pi_loss = 0
         v_loss = 0

@@ -1,5 +1,7 @@
 # import matplotlib
 # matplotlib.use("Agg")
+import math
+
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
@@ -7,14 +9,15 @@ import torch.cuda
 import torch.optim as optim
 from tqdm import tqdm
 import glob
-import State as State
+# import State as State
 # import State_Bilateral as State
-# import State_Gaussian as State
+import State_Gaussian as State
 # from FCN import *
 from FCN_sm_4 import *
 from mini_batch_loader import MiniBatchLoader
 from pixelwise_a3c import *
 from config import config
+
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 
@@ -50,7 +53,7 @@ def main():
     raw_val = mini_batch_loader.load_training_data(r_val)
 
     val_PSNR = []
-
+    pre_pnsr = -math.inf
     for n_epi in tqdm(range(0, 9000000), ncols=70, initial=0):
 
         r = indices[i_index: i_index + config.BATCH_SIZE]
@@ -79,16 +82,21 @@ def main():
                 cv2.waitKey(1)
 
             previous_image = np.clip(current_state.image.copy(), a_min=0., a_max=1.)
-            action, action_prob, tst_act = agent.act_and_train(current_state.tensor, reward)
+            action, action_par, action_prob, tst_act = agent.act_and_train(current_state.tensor, reward)
 
             if n_epi % 150 == 0:
                 print(action[10])
+                # print(action_par[10])
+                print([current_state.hybrid_act(3, 10, action_par),
+                       current_state.hybrid_act(4, 10, action_par),
+                       current_state.hybrid_act(5, 10, action_par),
+                       current_state.hybrid_act(6, 10, action_par)])
                 print(action_prob[10])
                 paint_amap(tst_act[10])
                 # paint_amap(action[10])
                 # paint_scatter(tst_act[10], current_state.image[10])
 
-            current_state.step(action)
+            current_state.step(action, action_par)
 
             reward = np.square(label - previous_image) * 255 - \
                      np.square(label - current_state.image) * 255
@@ -101,12 +109,16 @@ def main():
 
         if n_epi % 100 == 0 and n_epi != 0:
             temp_psnr = agent.val(agent, State, raw_val, config.EPISODE_LEN)
+            if temp_psnr > pre_pnsr:
+                pre_pnsr = temp_psnr
+                torch.save(model.state_dict(), "./GaussianFilterHybridMax/GaussianModela" +
+                           str(n_epi) + "_" + str(temp_psnr)+ "_.pth")
             val_PSNR.append(temp_psnr)
             patin_val(val_PSNR)
 
-        if n_epi % 1000 == 0:
-            # torch.save(model.state_dict(), "../GaussianFilterModel/GaussianModela{}_.pth".format(n_epi))
-            torch.save(model.state_dict(), "../MixFilterModel/MixModela{}_.pth".format(n_epi))
+        # if n_epi % 1000 == 0:
+        #     # torch.save(model.state_dict(), "../GaussianFilterModel/GaussianModela{}_.pth".format(n_epi))
+        #     torch.save(model.state_dict(), "../MixFilterModel/MixModela{}_.pth".format(n_epi))
 
         if i_index + config.BATCH_SIZE >= train_data_size:
             i_index = 0

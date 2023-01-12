@@ -18,7 +18,7 @@ class State():
     #     self.image = x
     #     self.tensor[:, :self.image.shape[1], :, :] = self.image
 
-    def step(self, act):
+    def step(self, act, par):
         act = act.numpy()
         neutral = (self.move_range - 1) / 2
         move = act.astype(np.float32)

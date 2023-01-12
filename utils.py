@@ -45,3 +45,8 @@ def survey(results, category_names):
 
 # survey(results, category_names)
 # plt.show()
+
+
+
+def sigmoid(x):
+    return 1/(1+np.exp(-x))
