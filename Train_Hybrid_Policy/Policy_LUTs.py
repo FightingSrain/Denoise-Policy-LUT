@@ -26,7 +26,7 @@ MAX_EPISODE = 100000
 GAMMA = 0.95
 N_ACTIONS = 7
 LR = 0.0001
-SAMPLING_INTERVAL = 2
+SAMPLING_INTERVAL = 4
 
 
 model = PPO(N_ACTIONS).to(device)
@@ -97,7 +97,6 @@ with torch.no_grad():
     NUM = 10000
     # Split input to not over GPU memory
     B = input_tensor.size(0) // NUM
-    LUT = []
     LUT = []
     for b in range(NUM):
         # Get Denoise LUT

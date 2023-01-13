@@ -9,11 +9,11 @@ from PIL import Image
 import numpy as np
 import glob
 import matplotlib.pyplot as plt
-from Policy_LUT.Transfer_LUTs import transfer_lut
+from Train_Hybrid_Policy.Transfer_LUTs import transfer_lut
 from scipy.special import softmax
 from config import config
 from utils import *
-import Train_Discrete_Policy.State as State
+import Train_Hybrid_Policy.State as State
 # import Train_Net.State_Bilateral as State
 # import Train_Net.State_Gaussian as State
 from collections import Counter
