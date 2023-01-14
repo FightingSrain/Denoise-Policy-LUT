@@ -13,24 +13,24 @@ from Train_Hybrid_Policy.Transfer_LUTs import transfer_lut
 from scipy.special import softmax
 from config import config
 from utils import *
-import Train_Hybrid_Policy.State as State
-# import Train_Net.State_Bilateral as State
-# import Train_Net.State_Gaussian as State
+# import Train_Hybrid_Policy.State as State
+# import Train_Hybrid_Policy.State_Bilateral as State
+import Train_Hybrid_Policy.State_Gaussian as State
 from collections import Counter
 
 
 
 
 
-SAMPLING_INTERVAL = 2        # N bit uniform sampling
+SAMPLING_INTERVAL = 4        # N bit uniform sampling
 SIGMA = config.SIGMA                  # Gaussian noise std
 L = 2 ** (8 - SAMPLING_INTERVAL) + 1
 q = 2**SAMPLING_INTERVAL
 
 LUT_PATH = "./Hybrid_LUTs/sample_{}_LUTs.npy".format(SAMPLING_INTERVAL)    # Trained SR net params
 # TEST_DIR = '../img_tst/'      # Test images
-TEST_DIR = 'D://Dataset/BSD68/'      # Test images
-# TEST_DIR = 'D://Dataset/Set12/'      # Test images
+# TEST_DIR = 'D://Dataset/BSD68/'      # Test images
+TEST_DIR = 'D://Dataset/Set12/'      # Test images
 def paint_amap(acmap, num_action):
     image = np.asanyarray(acmap.squeeze(), dtype=np.uint8)
     plt.imshow(image, vmin=0, vmax=num_action)
@@ -92,7 +92,7 @@ for ti, fn in enumerate(tqdm(files_gt)):
     t1 = time.time()
 
     for i in range(5):
-        # cv2.imshow('current_state.image_ins', (current_state.image[0, 0, :, :] * 255).astype(np.uint8))
+        cv2.imshow('current_state.image_ins', (current_state.image[0, 0, :, :] * 255).astype(np.uint8))
         # cv2.waitKey(0)
         # out_action = transfer_lut((current_state.image[0, 0, :, :]*255).astype(np.uint8),
         #                           LUT, h, w, q, L)
@@ -100,21 +100,21 @@ for ti, fn in enumerate(tqdm(files_gt)):
 
         # rotation
         ins1 = current_state.image[0, 0, :, :] * 255
-        out_policy1 = transfer_lut(ins1.astype(np.uint8),
+        D_policy1, C_policy1 = transfer_lut(ins1.astype(np.uint8),
                                   LUT, h, w, config.N_ACTIONS, q, L, 0)
 
         ins2 = np.rot90(current_state.image[0, 0, :, :] * 255, 1)
-        out_policy2 = transfer_lut(ins2.astype(np.uint8),
+        D_policy2, C_policy2 = transfer_lut(ins2.astype(np.uint8),
                                    LUT, w, h, config.N_ACTIONS, q, L, 3)
 
 
         ins3 = current_state.image[0, 0, :, :] * 255
-        out_policy3 = transfer_lut((np.rot90(ins3, 2)).astype(np.uint8),
+        D_policy3, C_policy3 = transfer_lut((np.rot90(ins3, 2)).astype(np.uint8),
                                       LUT, h, w, config.N_ACTIONS, q, L, 2)
 
 
         ins4 = np.rot90(current_state.image[0, 0, :, :] * 255, 3)
-        out_policy4 = transfer_lut(ins4.astype(np.uint8),
+        D_policy4, C_policy4 = transfer_lut(ins4.astype(np.uint8),
                                       LUT, w, h, config.N_ACTIONS, q, L, 1)
         # print(out_policy1[0, 0, 0, :])
         # print(out_policy1.shape)
@@ -124,24 +124,36 @@ for ti, fn in enumerate(tqdm(files_gt)):
         # print("888")
         # print(((out_policy1 + out_policy2 +
         #               out_policy3 + out_policy4) / 4.)[0, 0, 0, :])
-        out_action = torch.argmax(F.softmax(torch.Tensor((out_policy1 + out_policy2 +
-                      out_policy3 + out_policy4) / 4.), dim=3), dim=3).numpy()
-        # out_action = np.argmax((out_policy1 + out_policy2 +
-        #                                 out_policy3 + out_policy4) / 4., axis=3)
+        D_action = torch.argmax(F.softmax(torch.Tensor((D_policy1 + D_policy2 +
+                      D_policy3 + D_policy4) / 4.), dim=3), dim=3).numpy()
+        # 更具D_action的值选择C_action维度3的下标
+        # C_action = torch.Tensor((C_policy1 + C_policy2 + C_policy3 + C_policy4) / 4.).\
+        #     gather(3, torch.Tensor(D_action).unsqueeze(3).long()).numpy()
+        C_action = torch.Tensor((C_policy1 + C_policy2 + C_policy3 + C_policy4) / 4.).numpy().reshape(1, -1, config.N_ACTIONS).mean(1)
+
+        # print(D_action.shape)
+        # print(C_action.shape)
+        # print("8888888888888")
+
         # paint_amap(out_action, 10)
 
-        data_count = collections.Counter(out_action.reshape((-1,))).items()
+        data_count = collections.Counter(D_action.reshape((-1,))).items()
         for key, value in data_count:
-            action_num[i][key] += (value/(out_action.shape[1]*out_action.shape[2]))
+            action_num[i][key] += (value/(D_action.shape[1]*D_action.shape[2]))
             print(key, value)
 
-        print(data_count)
-        print(ti)
-        current_state.step(torch.Tensor(out_action))
+        # print(data_count)
+        # print(ti)
+        # 输出动作参数
+        # print([current_state.hybrid_act(3, 0, C_action),
+        #        current_state.hybrid_act(4, 0, C_action),
+        #        current_state.hybrid_act(5, 0, C_action),
+        #        current_state.hybrid_act(6, 0, C_action)])
+        current_state.step(torch.Tensor(D_action), C_action)
         if i == 4:
             res = copy.deepcopy(current_state.image[0, 0, :, :])
             # cv2.imwrite("../res_img/BSD68/res{}.png".format(ti), (res * 255).astype(np.uint8))
-            cv2.imwrite("./res_img/Hybrid_BSD68/res{}.png".format(ti), (res * 255).astype(np.uint8))
+            cv2.imwrite("./res_img/Hybrid_Set12/res{}.png".format(ti), (res * 255).astype(np.uint8))
             # cv2.imwrite("../res_img/Bilateral_Set12/res{}.png".format(ti),
             #             cv2.bilateralFilter((ins_noisy[0, 0, :, :] * 255).astype(np.uint8),
             #                                 d=5, sigmaColor=100, sigmaSpace=20)
@@ -165,8 +177,8 @@ for ti, fn in enumerate(tqdm(files_gt)):
         # print("---------------------------------")
         # print(current_state.image.shape)
         # print("------------")
-        # cv2.imshow('current_state.image', (current_state.image[0, 0, :, :]*255).astype(np.uint8))
-        # cv2.waitKey(0)
+        cv2.imshow('current_state.image', (current_state.image[0, 0, :, :]*255).astype(np.uint8))
+        cv2.waitKey(1)
 
     t2 = time.time()
     print('消耗时间：', (t2 - t1)*1000, "ms")

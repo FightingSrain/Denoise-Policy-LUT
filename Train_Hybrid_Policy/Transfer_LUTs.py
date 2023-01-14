@@ -43,13 +43,20 @@ def transfer_lut(img_noisy, LUT, h, w, num_act, q, L, rot):
     #     reshape((img_a1.shape[0], img_a1.shape[1], img_a1.shape[2]))
 
     # output policy (action probability)
-    out_policy = LUT[img_a1.flatten().astype(np.int_) * L * L * L +
+    D_policy = LUT[img_a1.flatten().astype(np.int_) * L * L * L +
                      img_b1.flatten().astype(np.int_) * L * L +
                      img_c1.flatten().astype(np.int_) * L +
-                     img_d1.flatten().astype(np.int_), :]. \
+                     img_d1.flatten().astype(np.int_), 0:num_act]. \
         reshape((1, h, w, num_act))
-    out_policy = np.rot90(out_policy, rot, axes=(1, 2))
-    return out_policy
+    C_policy = LUT[img_a1.flatten().astype(np.int_) * L * L * L +
+                     img_b1.flatten().astype(np.int_) * L * L +
+                     img_c1.flatten().astype(np.int_) * L +
+                     img_d1.flatten().astype(np.int_), num_act:num_act*2]. \
+        reshape((1, h, w, num_act))
+
+    D_policy = np.rot90(D_policy, rot, axes=(1, 2))
+    C_policy = np.rot90(C_policy, rot, axes=(1, 2))
+    return D_policy, C_policy
 
 def Interp(weight, img_in, h, w, q, rot, SAMPLING_INTERVAL=4):
     L = 2 ** (8 - SAMPLING_INTERVAL) + 1
