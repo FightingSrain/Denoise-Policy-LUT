@@ -92,7 +92,7 @@ for ti, fn in enumerate(tqdm(files_gt)):
     t1 = time.time()
 
     for i in range(5):
-        cv2.imshow('current_state.image_ins', (current_state.image[0, 0, :, :] * 255).astype(np.uint8))
+        # cv2.imshow('current_state.image_ins', (current_state.image[0, 0, :, :] * 255).astype(np.uint8))
         # cv2.waitKey(0)
         # out_action = transfer_lut((current_state.image[0, 0, :, :]*255).astype(np.uint8),
         #                           LUT, h, w, q, L)
@@ -129,7 +129,7 @@ for ti, fn in enumerate(tqdm(files_gt)):
         # 更具D_action的值选择C_action维度3的下标
         # C_action = torch.Tensor((C_policy1 + C_policy2 + C_policy3 + C_policy4) / 4.).\
         #     gather(3, torch.Tensor(D_action).unsqueeze(3).long()).numpy()
-        C_action = torch.Tensor((C_policy1 + C_policy2 + C_policy3 + C_policy4) / 4.).numpy().reshape(1, -1, config.N_ACTIONS).mean(1)
+        C_action = torch.Tensor((C_policy1 + C_policy2 + C_policy3 + C_policy4) / 4.).numpy()[:, 0, 0, :]
 
         # print(D_action.shape)
         # print(C_action.shape)
@@ -137,10 +137,10 @@ for ti, fn in enumerate(tqdm(files_gt)):
 
         # paint_amap(out_action, 10)
 
-        data_count = collections.Counter(D_action.reshape((-1,))).items()
-        for key, value in data_count:
-            action_num[i][key] += (value/(D_action.shape[1]*D_action.shape[2]))
-            print(key, value)
+        # data_count = collections.Counter(D_action.reshape((-1,))).items()
+        # for key, value in data_count:
+        #     action_num[i][key] += (value/(D_action.shape[1]*D_action.shape[2]))
+        #     print(key, value)
 
         # print(data_count)
         # print(ti)
@@ -152,21 +152,21 @@ for ti, fn in enumerate(tqdm(files_gt)):
         current_state.step(torch.Tensor(D_action), C_action)
         if i == 4:
             res = copy.deepcopy(current_state.image[0, 0, :, :])
-            # cv2.imwrite("../res_img/BSD68/res{}.png".format(ti), (res * 255).astype(np.uint8))
-            cv2.imwrite("./res_img/Hybrid_Set12/res{}.png".format(ti), (res * 255).astype(np.uint8))
+            cv2.imwrite("./res_img/Noise_img_Set12/Noise{}.png".format(ti), (ins_noisy[0, 0, :, :] * 255).astype(np.uint8))
+            # cv2.imwrite("./res_img/Hybrid_Set12/res{}.png".format(ti), (res * 255).astype(np.uint8))
             # cv2.imwrite("../res_img/Bilateral_Set12/res{}.png".format(ti),
             #             cv2.bilateralFilter((ins_noisy[0, 0, :, :] * 255).astype(np.uint8),
             #                                 d=5, sigmaColor=100, sigmaSpace=20)
             #             )
-            t1s = time.time()
+            # t1s = time.time()
             # cv2.imwrite("../res_img/NLM_BSD68/res{}.png".format(ti),
             #             cv2.fastNlMeansDenoising((ins_noisy[0, 0, :, :] * 255).astype(np.uint8),
             #                                 h=15, templateWindowSize=7, searchWindowSize=21)
             #             )
-            nlm = cv2.fastNlMeansDenoising((ins_noisy[0, 0, :, :] * 255).astype(np.uint8),
-                                     h=15, templateWindowSize=7, searchWindowSize=21)
-            t2s = time.time()
-            print("NLM time: ", (t2s - t1s)*1000, "ms")
+            # nlm = cv2.fastNlMeansDenoising((ins_noisy[0, 0, :, :] * 255).astype(np.uint8),
+            #                          h=15, templateWindowSize=7, searchWindowSize=21)
+            # t2s = time.time()
+            # print("NLM time: ", (t2s - t1s)*1000, "ms")
         # ori_psnr = cv2.PSNR((ins_noisy[0, 0, :, :]*255).astype(np.uint8),
         #                     (img_gts[0, 0, :, :]*255).astype(np.uint8))
         # print('ori_psnr: ', ori_psnr)
@@ -177,8 +177,8 @@ for ti, fn in enumerate(tqdm(files_gt)):
         # print("---------------------------------")
         # print(current_state.image.shape)
         # print("------------")
-        cv2.imshow('current_state.image', (current_state.image[0, 0, :, :]*255).astype(np.uint8))
-        cv2.waitKey(1)
+        # cv2.imshow('current_state.image', (current_state.image[0, 0, :, :]*255).astype(np.uint8))
+        # cv2.waitKey(1)
 
     t2 = time.time()
     print('消耗时间：', (t2 - t1)*1000, "ms")
