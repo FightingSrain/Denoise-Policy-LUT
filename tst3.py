@@ -20,9 +20,21 @@ import numpy as np
 # print(res3)
 
 
-ins = torch.Tensor([[[[3, 2, 1],
-                    [1, 3, 2],
-                    [1, 2, 3]]]])
+# ins = torch.Tensor([[[[3, 2, 1],
+#                     [1, 3, 2],
+#                     [1, 2, 3]]]])
+# 给定一个不含重复数字的数组 nums ，返回其 所有可能的全排列
+def permute(nums):
+    res = []
+    def backtrack(nums, tmp):
+        if not nums:
+            res.append(tmp)
+            return
+        for i in range(len(nums)):
+            backtrack(nums[:i] + nums[i+1:], tmp + [nums[i]])
+    backtrack(nums, [])
+    return res
+print(permute([1,2,3]))
 
 
 
