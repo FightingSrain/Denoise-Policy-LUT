@@ -22,15 +22,15 @@ from collections import Counter
 
 
 
-SAMPLING_INTERVAL = 4        # N bit uniform sampling
+SAMPLING_INTERVAL = 5       # N bit uniform sampling
 SIGMA = config.SIGMA                  # Gaussian noise std
 L = 2 ** (8 - SAMPLING_INTERVAL) + 1
 q = 2**SAMPLING_INTERVAL
 
 LUT_PATH = "./Hybrid_LUTs/sample_{}_LUTs.npy".format(SAMPLING_INTERVAL)    # Trained SR net params
 # TEST_DIR = '../img_tst/'      # Test images
-# TEST_DIR = 'D://Dataset/BSD68/'      # Test images
-TEST_DIR = 'D://Dataset/Set12/'      # Test images
+TEST_DIR = 'D://Dataset/BSD68/'      # Test images
+# TEST_DIR = 'D://Dataset/Set12/'      # Test images
 def paint_amap(acmap, num_action):
     image = np.asanyarray(acmap.squeeze(), dtype=np.uint8)
     plt.imshow(image, vmin=0, vmax=num_action)
@@ -50,7 +50,7 @@ files_gt = glob.glob(TEST_DIR + '*.png')
 files_gt.sort()
 # ---------------
 action_num = np.zeros((5, config.N_ACTIONS))
-
+total_psnr = 0
 
 # ---------------
 for ti, fn in enumerate(tqdm(files_gt)):
@@ -92,7 +92,7 @@ for ti, fn in enumerate(tqdm(files_gt)):
     t1 = time.time()
 
     for i in range(5):
-        cv2.imshow('current_state.image_ins', (current_state.image[0, 0, :, :] * 255).astype(np.uint8))
+        # cv2.imshow('current_state.image_ins', (current_state.image[0, 0, :, :] * 255).astype(np.uint8))
         # cv2.waitKey(0)
         # out_action = transfer_lut((current_state.image[0, 0, :, :]*255).astype(np.uint8),
         #                           LUT, h, w, q, L)
@@ -177,11 +177,15 @@ for ti, fn in enumerate(tqdm(files_gt)):
         # print("---------------------------------")
         # print(current_state.image.shape)
         # print("------------")
-        cv2.imshow('current_state.image', (current_state.image[0, 0, :, :]*255).astype(np.uint8))
-        cv2.waitKey(0)
+        # cv2.imshow('current_state.image', (current_state.image[0, 0, :, :]*255).astype(np.uint8))
+        # cv2.waitKey(0)
 
+    total_psnr += cv2.PSNR((res * 255).astype(np.uint8),
+                        (img_gts[0, 0, :, :]*255).astype(np.uint8))
     t2 = time.time()
     print('消耗时间：', (t2 - t1)*1000, "ms")
+print(total_psnr/68.)
+
 
 # --------------------------
 # category_names = ['Pixel-1', 'Do nothing',
