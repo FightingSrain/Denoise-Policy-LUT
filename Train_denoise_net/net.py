@@ -12,17 +12,23 @@ class Net(nn.Module):
     def __init__(self):
         super(Net, self).__init__()
         # self.action_n = Action_N
-        kernel_size = 5
+        kernel_size = 3
         kernel = torch.randn((64, 1, kernel_size, kernel_size))
+        # kernel = torch.randn((64, 1, kernel_size, kernel_size))
+        mask = torch.Tensor([[[[1,0,1],
+                [0, 1, 0],
+                [1, 0 ,1]]]])
+        print(mask.size())
+        print("*****")
 
-        self.weight = nn.Parameter(data=kernel, requires_grad=True)
-        self.weight[:, :, 0:2, :].detach().fill_(0.)
-        self.weight[:, :, :, 0:2].detach().fill_(0.)
-        self.weight[:, :, 3:4, :].detach().fill_(0.)
-        self.weight[:, :, :, 3:4].detach().fill_(0.)
+        self.weight = nn.Parameter(data=kernel*mask, requires_grad=True)
+        # self.weight[:, :, 0:2, :].detach().fill_(0.)
+        # self.weight[:, :, :, 0:2].detach().fill_(0.)
+        # self.weight[:, :, 3:4, :].detach().fill_(0.)
+        # self.weight[:, :, :, 3:4].detach().fill_(0.)
         bias = torch.zeros((64))
         self.bias = nn.Parameter(data=bias, requires_grad=True)
-
+        self.conv1 = nn.Conv2d(1, 64, 1, stride=1, padding=0, dilation=1)
         self.conv2 = nn.Conv2d(64, 64, 1, stride=1, padding=0, dilation=1)
         self.conv3 = nn.Conv2d(64, 64, 1, stride=1, padding=0, dilation=1)
         self.conv4 = nn.Conv2d(64, 64, 1, stride=1, padding=0, dilation=1)
@@ -49,14 +55,16 @@ class Net(nn.Module):
     def pi_and_v(self, x):
         B, _, H, W = x.size()
         x_in = x[:, 0:1, :, :].reshape(B * 1, 1, H, W)
-
-        x = F.conv2d(x_in, self.weight, stride=1, padding=2, padding_model='reflect', groups=1, bias=self.bias)
+        # x = self.conv1(x_in)
+        x = F.conv2d(x_in, self.weight, stride=1, padding=1, bias=self.bias)
+        print(self.weight[0,0,:,:])
+        # x = F.conv2d(x_in, self.weight, stride=1, padding=1, padding_model='reflect', groups=1, bias=self.bias)
         x = self.conv2(F.relu(x))
         x = self.conv3(F.relu(x))
         x = self.conv4(F.relu(x))
         p = self.conv4p(F.relu(x))
         p = self.conv5p(F.relu(p))
-        res = F.sigmoid(self.conv6p(p), dim=1)
+        res = F.sigmoid(self.conv6p(F.relu(p)))
 
         return res
 
