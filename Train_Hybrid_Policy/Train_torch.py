@@ -111,8 +111,8 @@ def main():
             temp_psnr = agent.val(agent, State, raw_val, config.EPISODE_LEN)
             if temp_psnr > pre_pnsr:
                 pre_pnsr = temp_psnr
-                torch.save(model.state_dict(), "./GaussianFilterHybridMax/GaussianModela" +
-                           str(n_epi) + "_" + str(temp_psnr)+ "_.pth")
+                # torch.save(model.state_dict(), "./GaussianFilterHybridMax/GaussianModela" +
+                #            str(n_epi) + "_" + str(temp_psnr)+ "_.pth")
             val_PSNR.append(temp_psnr)
             patin_val(val_PSNR)
 

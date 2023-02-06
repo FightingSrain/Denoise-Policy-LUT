@@ -92,7 +92,7 @@ for ti, fn in enumerate(tqdm(files_gt)):
     t1 = time.time()
 
     for i in range(5):
-        # cv2.imshow('current_state.image_ins', (current_state.image[0, 0, :, :] * 255).astype(np.uint8))
+        cv2.imshow('current_state.image_ins', (current_state.image[0, 0, :, :] * 255).astype(np.uint8))
         # cv2.waitKey(0)
         # out_action = transfer_lut((current_state.image[0, 0, :, :]*255).astype(np.uint8),
         #                           LUT, h, w, q, L)
@@ -152,7 +152,7 @@ for ti, fn in enumerate(tqdm(files_gt)):
         current_state.step(torch.Tensor(D_action), C_action)
         if i == 4:
             res = copy.deepcopy(current_state.image[0, 0, :, :])
-            cv2.imwrite("./res_img/Noise_img_Set12/Noise{}.png".format(ti), (ins_noisy[0, 0, :, :] * 255).astype(np.uint8))
+            # cv2.imwrite("./res_img/Noise_img_Set12/Noise{}.png".format(ti), (ins_noisy[0, 0, :, :] * 255).astype(np.uint8))
             # cv2.imwrite("./res_img/Hybrid_Set12/res{}.png".format(ti), (res * 255).astype(np.uint8))
             # cv2.imwrite("../res_img/Bilateral_Set12/res{}.png".format(ti),
             #             cv2.bilateralFilter((ins_noisy[0, 0, :, :] * 255).astype(np.uint8),
@@ -177,8 +177,8 @@ for ti, fn in enumerate(tqdm(files_gt)):
         # print("---------------------------------")
         # print(current_state.image.shape)
         # print("------------")
-        # cv2.imshow('current_state.image', (current_state.image[0, 0, :, :]*255).astype(np.uint8))
-        # cv2.waitKey(1)
+        cv2.imshow('current_state.image', (current_state.image[0, 0, :, :]*255).astype(np.uint8))
+        cv2.waitKey(0)
 
     t2 = time.time()
     print('消耗时间：', (t2 - t1)*1000, "ms")
