@@ -26,11 +26,11 @@ MAX_EPISODE = 100000
 GAMMA = 0.95
 N_ACTIONS = 7
 LR = 0.0001
-SAMPLING_INTERVAL = 4
+SAMPLING_INTERVAL = 5
 
 
 model = PPO(N_ACTIONS).to(device)
-model.load_state_dict(torch.load("./GaussianFilterHybridMax/GaussianModela16100_33.482850886408976_.pth"))
+model.load_state_dict(torch.load("GaussianFilterHybridMax_15/GaussianModela16100_33.482850886408976_.pth"))
 # model = torch.load("../MixFilterModel/MixModela30000_.pth")
 # for k in m.keys():
 #     print(k)
@@ -94,7 +94,7 @@ with torch.no_grad():
     # intputs[:, :, 4, 2] = input_tensor[:, :, 1, 0]
     # intputs[:, :, 4, 4] = input_tensor[:, :, 1, 1]
 
-    NUM = 10000
+    NUM = 1000 # 采样>=5时，调整为10
     # Split input to not over GPU memory
     B = input_tensor.size(0) // NUM
     LUT = []
@@ -148,4 +148,4 @@ with torch.no_grad():
 
     LUTs = np.concatenate(LUT, 0)
     print("Resulting LUT size: ", LUTs.shape)
-    np.save("./Hybrid_LUTs/sample_{}_LUTs".format(SAMPLING_INTERVAL), LUTs)
+    np.save("./Hybrid_LUTs/sample_{}_LUTs_{}".format(SAMPLING_INTERVAL, config.SIGMA), LUTs)
