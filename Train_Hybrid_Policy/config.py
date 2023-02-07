@@ -5,7 +5,7 @@ class config:
     MOVE_RANGE = 3
     EPISODE_LEN = 5
     MAX_EPISODE = 100000
-    GAMMA = 0.95
+    GAMMA = 0.99
     N_ACTIONS = 7
     BATCH_SIZE = 32
     LR = 0.0001

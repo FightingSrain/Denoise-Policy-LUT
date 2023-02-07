@@ -30,86 +30,86 @@ def FourSimplexInterp(weight, img_in, h, w, q, L, num_act, rot):
                    img_b1.flatten().astype(np.int_) * L * L +
                    img_c1.flatten().astype(np.int_) * L +
                    img_d1.flatten().astype(np.int_), :].reshape(
-        (img_a1.shape[0], img_a1.shape[1], img_a1.shape[2], num_act))
+        (img_a1.shape[0], img_a1.shape[1], img_a1.shape[2], num_act*2))
     p0001 = weight[img_a1.flatten().astype(np.int_) * L * L * L +
                    img_b1.flatten().astype(np.int_) * L * L +
                    img_c1.flatten().astype(np.int_) * L +
                    img_d2.flatten().astype(np.int_), :].reshape(
-        (img_a1.shape[0], img_a1.shape[1], img_a1.shape[2], num_act))
+        (img_a1.shape[0], img_a1.shape[1], img_a1.shape[2], num_act*2))
     p0010 = weight[img_a1.flatten().astype(np.int_) * L * L * L +
                    img_b1.flatten().astype(np.int_) * L * L +
                    img_c2.flatten().astype(np.int_) * L +
                    img_d1.flatten().astype(np.int_), :].reshape(
-        (img_a1.shape[0], img_a1.shape[1], img_a1.shape[2], num_act))
+        (img_a1.shape[0], img_a1.shape[1], img_a1.shape[2], num_act*2))
     p0011 = weight[img_a1.flatten().astype(np.int_) * L * L * L +
                    img_b1.flatten().astype(np.int_) * L * L +
                    img_c2.flatten().astype(np.int_) * L +
                    img_d2.flatten().astype(np.int_), :].reshape(
-        (img_a1.shape[0], img_a1.shape[1], img_a1.shape[2], num_act))
+        (img_a1.shape[0], img_a1.shape[1], img_a1.shape[2], num_act*2))
     p0100 = weight[img_a1.flatten().astype(np.int_) * L * L * L +
                    img_b2.flatten().astype(np.int_) * L * L +
                    img_c1.flatten().astype(np.int_) * L +
                    img_d1.flatten().astype(np.int_), :].reshape(
-        (img_a1.shape[0], img_a1.shape[1], img_a1.shape[2], num_act))
+        (img_a1.shape[0], img_a1.shape[1], img_a1.shape[2], num_act*2))
     p0101 = weight[img_a1.flatten().astype(np.int_) * L * L * L +
                    img_b2.flatten().astype(np.int_) * L * L +
                    img_c1.flatten().astype(np.int_) * L +
                    img_d2.flatten().astype(np.int_), :].reshape(
-        (img_a1.shape[0], img_a1.shape[1], img_a1.shape[2], num_act))
+        (img_a1.shape[0], img_a1.shape[1], img_a1.shape[2], num_act*2))
     p0110 = weight[img_a1.flatten().astype(np.int_) * L * L * L +
                    img_b2.flatten().astype(np.int_) * L * L +
                    img_c2.flatten().astype(np.int_) * L +
                    img_d1.flatten().astype(np.int_), :].reshape(
-        (img_a1.shape[0], img_a1.shape[1], img_a1.shape[2], num_act))
+        (img_a1.shape[0], img_a1.shape[1], img_a1.shape[2], num_act*2))
     p0111 = weight[img_a1.flatten().astype(np.int_) * L * L * L +
                    img_b2.flatten().astype(np.int_) * L * L +
                    img_c2.flatten().astype(np.int_) * L +
                    img_d2.flatten().astype(np.int_), :].reshape(
-        (img_a1.shape[0], img_a1.shape[1], img_a1.shape[2], num_act))
+        (img_a1.shape[0], img_a1.shape[1], img_a1.shape[2], num_act*2))
 
     p1000 = weight[img_a2.flatten().astype(np.int_) * L * L * L +
                    img_b1.flatten().astype(np.int_) * L * L +
                    img_c1.flatten().astype(np.int_) * L +
                    img_d1.flatten().astype(np.int_), :].reshape(
-        (img_a1.shape[0], img_a1.shape[1], img_a1.shape[2], num_act))
+        (img_a1.shape[0], img_a1.shape[1], img_a1.shape[2], num_act*2))
     p1001 = weight[img_a2.flatten().astype(np.int_) * L * L * L +
                    img_b1.flatten().astype(np.int_) * L * L +
                    img_c1.flatten().astype(np.int_) * L +
                    img_d2.flatten().astype(np.int_), :].reshape(
-        (img_a1.shape[0], img_a1.shape[1], img_a1.shape[2], num_act))
+        (img_a1.shape[0], img_a1.shape[1], img_a1.shape[2], num_act*2))
     p1010 = weight[img_a2.flatten().astype(np.int_) * L * L * L +
                    img_b1.flatten().astype(np.int_) * L * L +
                    img_c2.flatten().astype(np.int_) * L +
                    img_d1.flatten().astype(np.int_), :].reshape(
-        (img_a1.shape[0], img_a1.shape[1], img_a1.shape[2], num_act))
+        (img_a1.shape[0], img_a1.shape[1], img_a1.shape[2], num_act*2))
     p1011 = weight[img_a2.flatten().astype(np.int_) * L * L * L +
                    img_b1.flatten().astype(np.int_) * L * L +
                    img_c2.flatten().astype(np.int_) * L +
                    img_d2.flatten().astype(np.int_), :].reshape(
-        (img_a1.shape[0], img_a1.shape[1], img_a1.shape[2], num_act))
+        (img_a1.shape[0], img_a1.shape[1], img_a1.shape[2], num_act*2))
     p1100 = weight[img_a2.flatten().astype(np.int_) * L * L * L +
                    img_b2.flatten().astype(np.int_) * L * L +
                    img_c1.flatten().astype(np.int_) * L +
                    img_d1.flatten().astype(np.int_), :].reshape(
-        (img_a1.shape[0], img_a1.shape[1], img_a1.shape[2], num_act))
+        (img_a1.shape[0], img_a1.shape[1], img_a1.shape[2], num_act*2))
     p1101 = weight[img_a2.flatten().astype(np.int_) * L * L * L +
                    img_b2.flatten().astype(np.int_) * L * L +
                    img_c1.flatten().astype(np.int_) * L +
                    img_d2.flatten().astype(np.int_), :].reshape(
-        (img_a1.shape[0], img_a1.shape[1], img_a1.shape[2], num_act))
+        (img_a1.shape[0], img_a1.shape[1], img_a1.shape[2], num_act*2))
     p1110 = weight[img_a2.flatten().astype(np.int_) * L * L * L +
                    img_b2.flatten().astype(np.int_) * L * L +
                    img_c2.flatten().astype(np.int_) * L +
                    img_d1.flatten().astype(np.int_), :].reshape(
-        (img_a1.shape[0], img_a1.shape[1], img_a1.shape[2], num_act))
+        (img_a1.shape[0], img_a1.shape[1], img_a1.shape[2], num_act*2))
     p1111 = weight[img_a2.flatten().astype(np.int_) * L * L * L +
                    img_b2.flatten().astype(np.int_) * L * L +
                    img_c2.flatten().astype(np.int_) * L +
                    img_d2.flatten().astype(np.int_), :].reshape(
-        (img_a1.shape[0], img_a1.shape[1], img_a1.shape[2], num_act))
+        (img_a1.shape[0], img_a1.shape[1], img_a1.shape[2], num_act*2))
 
     # Output image holder
-    out = np.zeros((img_a1.shape[0], img_a1.shape[1], img_a1.shape[2], num_act))
+    out = np.zeros((img_a1.shape[0], img_a1.shape[1], img_a1.shape[2], num_act*2))
 
     # Naive pixelwise output value interpolation (Table3 in the paper)
     # It would be faster implemented with a parallel operation

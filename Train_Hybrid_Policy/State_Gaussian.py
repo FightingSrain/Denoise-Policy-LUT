@@ -33,9 +33,9 @@ class State():
         gaussian = np.zeros(self.image.shape, self.image.dtype)
         gaussian2 = np.zeros(self.image.shape, self.image.dtype)
         bilateral = np.zeros(self.image.shape, self.image.dtype)
-        bilateral2 = np.zeros(self.image.shape, self.image.dtype)
+        # bilateral2 = np.zeros(self.image.shape, self.image.dtype)
         median = np.zeros(self.image.shape, self.image.dtype)
-        box = np.zeros(self.image.shape, self.image.dtype)
+        # box = np.zeros(self.image.shape, self.image.dtype)
 
 
         batch, c, h, w = self.image.shape

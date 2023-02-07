@@ -92,8 +92,6 @@ class PPO(nn.Module):
             policy, mean, logstd, value = self.pi_and_v(F.pad(x, (0, pad, 0, pad), mode='reflect'))
             policy = torch.rot90(policy, rot2, [2, 3])
             value = torch.rot90(value, rot2, [2, 3])
-            # mean = torch.rot90(mean, rot2, [2, 3])
-            # logstd = torch.rot90(logstd, rot2, [2, 3])
         return policy, mean, logstd, value
 
     def forward(self, x):
@@ -103,7 +101,6 @@ class PPO(nn.Module):
         policy4, mean4, logstd4, value4 = self.ensemble_pi_and_v(x, rot1=0, rot2=0, pad=2)
 
         policy = F.softmax((policy1 + policy2 + policy3 + policy4) / 4., dim=1)
-        # policy = (policy1 + policy2 + policy3 + policy4) / 4.
         value = (value1 + value2 + value3 + value4) / 4.
         mean = (mean1 + mean2 + mean3 + mean4) / 4.
         logstd = (logstd1 + logstd2 + logstd3 + logstd4) / 4.

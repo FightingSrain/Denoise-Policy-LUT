@@ -22,12 +22,12 @@ from collections import Counter
 
 
 
-SAMPLING_INTERVAL = 4       # N bit uniform sampling
+SAMPLING_INTERVAL = 5       # N bit uniform sampling
 SIGMA = config.SIGMA                  # Gaussian noise std
 L = 2 ** (8 - SAMPLING_INTERVAL) + 1
 q = 2**SAMPLING_INTERVAL
 
-LUT_PATH = "./Hybrid_LUTs/sample_{}_LUTs_{}.npy".format(SAMPLING_INTERVAL, 15)    # Trained SR net params
+LUT_PATH = "./Hybrid_LUTs/sample_{}_LUTs_{}.npy".format(SAMPLING_INTERVAL, SIGMA)    # Trained SR net params
 # TEST_DIR = '../img_tst/'      # Test images
 TEST_DIR = 'D://Dataset/BSD68/'      # Test images
 # TEST_DIR = 'D://Dataset/Set12/'      # Test images
@@ -55,7 +55,7 @@ total_psnr = 0
 # ---------------
 for ti, fn in enumerate(tqdm(files_gt)):
     # Load noise image and gt
-    img_gt = np.array(Image.open(files_gt[ti])).astype(np.int) / 255.
+    img_gt = np.asanyarray(Image.open(files_gt[ti])) / 255.
     h, w = img_gt.shape  # (481, 321)
     # print(img_gt)
     # Add noise
@@ -92,7 +92,7 @@ for ti, fn in enumerate(tqdm(files_gt)):
     t1 = time.time()
 
     for i in range(5):
-        # cv2.imshow('current_state.image_ins', (current_state.image[0, 0, :, :] * 255).astype(np.uint8))
+        cv2.imshow('current_state.image_ins', (current_state.image[0, 0, :, :] * 255).astype(np.uint8))
         # cv2.waitKey(0)
 
 
@@ -100,53 +100,59 @@ for ti, fn in enumerate(tqdm(files_gt)):
         ins1 = current_state.image[0, 0, :, :] * 255.
         ins1 = np.pad(ins1, ((0, 2), (0, 2)), mode='reflect')
         ins1 = np.expand_dims(ins1, 0)
-        D_policy1 = FourSimplexInterp(LUT[:, 0:config.N_ACTIONS], ins1.astype(np.uint8),
-                                  h, w, q, L, config.N_ACTIONS, 0)
-        D_policy1 = np.rot90(D_policy1, 0, axes=[1, 2])
-        C_policy1 = FourSimplexInterp(LUT[:, config.N_ACTIONS:config.N_ACTIONS*2], ins1.astype(np.uint8),
-                                  h, w, q, L, config.N_ACTIONS, 0)
-        C_policy1 = np.rot90(C_policy1, 0, axes=[1, 2])
+        # D_policy1 = FourSimplexInterp(LUT[:, 0:config.N_ACTIONS], ins1.astype(np.uint8),
+        #                           h, w, q, L, config.N_ACTIONS, 0)
+        # D_policy1 = np.rot90(D_policy1, 0, axes=[1, 2])
+        # C_policy1 = FourSimplexInterp(LUT[:, config.N_ACTIONS:config.N_ACTIONS*2], ins1.astype(np.uint8),
+        #                           h, w, q, L, config.N_ACTIONS, 0)
+        policy1 = FourSimplexInterp(LUT, ins1.astype(np.uint8),
+                                      h, w, q, L, config.N_ACTIONS, 0)
+        D_policy1 = np.rot90(policy1[:, :, :, 0:config.N_ACTIONS], 0, axes=[1, 2])
+        C_policy1 = np.rot90(policy1[:, :, :, config.N_ACTIONS:config.N_ACTIONS*2], 0, axes=[1, 2])
 
 
         ins2 = np.rot90(current_state.image[0, 0, :, :] * 255., 1)
         ins2 = np.pad(ins2, ((0, 2), (0, 2)), mode='reflect')
         ins2 = np.expand_dims(ins2, 0)
-        D_policy2 = FourSimplexInterp(LUT[:, 0:config.N_ACTIONS], ins2.astype(np.uint8),
+        # D_policy2 = FourSimplexInterp(LUT[:, 0:config.N_ACTIONS], ins2.astype(np.uint8),
+        #                               w, h, q, L, config.N_ACTIONS, 3)
+        # D_policy2 = np.rot90(D_policy2, 3, axes=[1, 2])
+
+        policy2 = FourSimplexInterp(LUT, ins2.astype(np.uint8),
                                       w, h, q, L, config.N_ACTIONS, 3)
-        D_policy2 = np.rot90(D_policy2, 3, axes=[1, 2])
-        C_policy2 = FourSimplexInterp(LUT[:, config.N_ACTIONS:config.N_ACTIONS * 2], ins2.astype(np.uint8),
-                                      w, h, q, L, config.N_ACTIONS, 3)
-        C_policy2 = np.rot90(C_policy2, 3, axes=[1, 2])
-        # D_policy2, C_policy2 = transfer_lut(ins2.astype(np.uint8),
-        #                            LUT, w, h, config.N_ACTIONS, q, L, 3)
+        D_policy2 = np.rot90(policy2[:, :, :, 0:config.N_ACTIONS], 3, axes=[1, 2])
+        C_policy2 = np.rot90(policy2[:, :, :, config.N_ACTIONS:config.N_ACTIONS * 2], 3, axes=[1, 2])
+
 
 
         ins3 = np.rot90(current_state.image[0, 0, :, :] * 255., 2)
         ins3 = np.pad(ins3, ((0, 2), (0, 2)), mode='reflect')
         ins3 = np.expand_dims(ins3, 0)
-        D_policy3 = FourSimplexInterp(LUT[:, 0:config.N_ACTIONS], ins3.astype(np.uint8),
+        # D_policy3 = FourSimplexInterp(LUT[:, 0:config.N_ACTIONS], ins3.astype(np.uint8),
+        #                               h, w, q, L, config.N_ACTIONS, 2)
+        # D_policy3 = np.rot90(D_policy3, 2, axes=[1, 2])
+        # C_policy3 = FourSimplexInterp(LUT[:, config.N_ACTIONS:config.N_ACTIONS * 2], ins3.astype(np.uint8),
+        #                               h, w, q, L, config.N_ACTIONS, 2)
+        policy3 = FourSimplexInterp(LUT, ins3.astype(np.uint8),
                                       h, w, q, L, config.N_ACTIONS, 2)
-        D_policy3 = np.rot90(D_policy3, 2, axes=[1, 2])
-        C_policy3 = FourSimplexInterp(LUT[:, config.N_ACTIONS:config.N_ACTIONS * 2], ins3.astype(np.uint8),
-                                      h, w, q, L, config.N_ACTIONS, 2)
-        C_policy3 = np.rot90(C_policy3, 2, axes=[1, 2])
-        # D_policy3, C_policy3 = transfer_lut((np.rot90(ins3, 2)).astype(np.uint8),
-        #                               LUT, h, w, config.N_ACTIONS, q, L, 2)
+        D_policy3 = np.rot90(policy3[:, :, :, 0:config.N_ACTIONS], 2, axes=[1, 2])
+        C_policy3 = np.rot90(policy3[:, :, :, config.N_ACTIONS:config.N_ACTIONS * 2], 2, axes=[1, 2])
 
 
         ins4 = np.rot90(current_state.image[0, 0, :, :] * 255., 3)
         ins4 = np.pad(ins4, ((0, 2), (0, 2)), mode='reflect')
         ins4 = np.expand_dims(ins4, 0)
-        D_policy4 = FourSimplexInterp(LUT[:, 0:config.N_ACTIONS], ins4.astype(np.uint8),
+        # D_policy4 = FourSimplexInterp(LUT[:, 0:config.N_ACTIONS], ins4.astype(np.uint8),
+        #                               w, h, q, L, config.N_ACTIONS, 1)
+        # D_policy4 = np.rot90(D_policy4, 1, axes=[1, 2])
+        # C_policy4 = FourSimplexInterp(LUT[:, config.N_ACTIONS:config.N_ACTIONS * 2], ins4.astype(np.uint8),
+        #                               w, h, q, L, config.N_ACTIONS, 1)
+
+        policy4 = FourSimplexInterp(LUT, ins4.astype(np.uint8),
                                       w, h, q, L, config.N_ACTIONS, 1)
-        D_policy4 = np.rot90(D_policy4, 1, axes=[1, 2])
-        C_policy4 = FourSimplexInterp(LUT[:, config.N_ACTIONS:config.N_ACTIONS * 2], ins4.astype(np.uint8),
-                                      w, h, q, L, config.N_ACTIONS, 1)
-        C_policy4 = np.rot90(C_policy4, 1, axes=[1, 2])
-        # D_policy4, C_policy4 = transfer_lut(ins4.astype(np.uint8),
-        #                               LUT, w, h, config.N_ACTIONS, q, L, 1)
-        # print(D_policy1.shape,D_policy2.shape, D_policy3.shape, D_policy4.shape)
-        # print(F.softmax(torch.Tensor(D_policy1), dim=3))
+        D_policy4 = np.rot90(policy4[:, :, :, 0:config.N_ACTIONS], 1, axes=[1, 2])
+        C_policy4 = np.rot90(policy4[:, :, :, config.N_ACTIONS:config.N_ACTIONS * 2], 1, axes=[1, 2])
+
         D_action = torch.argmax(F.softmax(torch.Tensor((D_policy1 + D_policy2 +
                       D_policy3 + D_policy4) / 4.), dim=3), dim=3).numpy()
         # 更具D_action的值选择C_action维度3的下标
@@ -158,7 +164,7 @@ for ti, fn in enumerate(tqdm(files_gt)):
         # print(C_action.shape)
         # print("8888888888888")
 
-        # paint_amap(D_action, 10)
+        paint_amap(D_action, 10)
 
         # data_count = collections.Counter(D_action.reshape((-1,))).items()
         # for key, value in data_count:
@@ -174,7 +180,7 @@ for ti, fn in enumerate(tqdm(files_gt)):
         #        current_state.hybrid_act(6, 0, C_action)])
         current_state.step(torch.Tensor(D_action), C_action)
         if i == 4:
-            res = copy.deepcopy(current_state.image[0, 0, :, :])
+            res = current_state.image[0, 0, :, :]
             # cv2.imwrite("./res_img/Noise_img_Set12/Noise{}.png".format(ti), (ins_noisy[0, 0, :, :] * 255).astype(np.uint8))
             # cv2.imwrite("./res_img/Hybrid_Set12/res{}.png".format(ti), (res * 255).astype(np.uint8))
             # cv2.imwrite("../res_img/Bilateral_Set12/res{}.png".format(ti),
@@ -200,13 +206,15 @@ for ti, fn in enumerate(tqdm(files_gt)):
         # print("---------------------------------")
         # print(current_state.image.shape)
         # print("------------")
-        # cv2.imshow('current_state.image', (current_state.image[0, 0, :, :]*255).astype(np.uint8))
-        # cv2.waitKey(0)
+        cv2.imshow('current_state.image', (current_state.image[0, 0, :, :]*255).astype(np.uint8))
+        cv2.waitKey(0)
 
-    total_psnr += cv2.PSNR((res * 255).astype(np.uint8),
-                        (img_gts[0, 0, :, :]*255).astype(np.uint8))
+
     t2 = time.time()
     print('消耗时间：', (t2 - t1)*1000, "ms")
+
+    total_psnr += cv2.PSNR((res * 255).astype(np.uint8),
+                           (img_gts[0, 0, :, :] * 255).astype(np.uint8))
 print(total_psnr/68.)
 
 
