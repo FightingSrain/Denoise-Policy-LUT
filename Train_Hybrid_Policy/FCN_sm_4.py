@@ -37,8 +37,8 @@ class PPO(nn.Module):
         for m in self.modules():
             classname = m.__class__.__name__
             if classname.lower().find('conv') != -1:
-                nn.init.orthogonal(m.weight)  # 正交初始化
-                # nn.init.kaiming_normal(m.weight)  # He初始化
+                # nn.init.orthogonal(m.weight)  # 正交初始化
+                nn.init.kaiming_normal(m.weight)  # He初始化
                 if m.bias is not None:
                     nn.init.constant(m.bias, 0)
             elif classname.find('bn') != -1:

@@ -50,3 +50,5 @@ def survey(results, category_names):
 
 def sigmoid(x):
     return 1/(1+np.exp(-x))
+def Softmax(x, dim=0):
+    return np.exp(x) / np.sum(np.exp(x), axis=dim, keepdims=True)

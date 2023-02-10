@@ -27,7 +27,7 @@ SIGMA = config.SIGMA                  # Gaussian noise std
 L = 2 ** (8 - SAMPLING_INTERVAL) + 1
 q = 2**SAMPLING_INTERVAL
 
-LUT_PATH = "./Hybrid_LUTs/sample_{}_LUTs.npy".format(SAMPLING_INTERVAL)    # Trained SR net params
+LUT_PATH = "./Hybrid_LUTs_15/sample_{}_LUTs.npy".format(SAMPLING_INTERVAL)    # Trained SR net params
 # TEST_DIR = '../img_tst/'      # Test images
 TEST_DIR = 'D://Dataset/BSD68/'      # Test images
 # TEST_DIR = 'D://Dataset/Set12/'      # Test images

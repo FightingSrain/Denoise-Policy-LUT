@@ -215,7 +215,7 @@ class PixelWiseA3C_InnerState():
             self.past_continue_action_entropy[self.t] = continue_entropy.cuda()
             self.past_values[self.t] = vout
             self.t += 1
-            return action.view(n, h, w).detach().cpu(), \
+            return action.view(n, h, w).detach().cpu().numpy(), \
                    continue_act.detach().cpu().numpy(), \
                    torch.exp(log_action_prob).squeeze(1).detach().cpu(), \
                    tst_act

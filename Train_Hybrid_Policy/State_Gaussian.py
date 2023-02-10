@@ -24,7 +24,7 @@ class State():
         return (b[num-3] + k * sigmoid(par[batch][num])).astype(np.float32)
 
     def step(self, act, par):
-        act = act.numpy()
+        # act = act.numpy()
         neutral = (self.move_range - 1) / 2.
         move = act.astype(np.float32)
         move = (move - neutral) / 255.
