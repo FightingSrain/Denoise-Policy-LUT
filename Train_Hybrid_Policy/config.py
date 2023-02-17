@@ -9,9 +9,14 @@ class config:
     N_ACTIONS = 7
     BATCH_SIZE = 32
     LR = 0.0001
-    img_size = 63
+
     sigma = 15
     num_episodes = 1e8
+
+    corp_size = 64
+    img_size = 32
+    img_tst_size = 64
+
 
     # --LUT--
     SAMPLING_INTERVAL = 4  # N bit uniform sampling

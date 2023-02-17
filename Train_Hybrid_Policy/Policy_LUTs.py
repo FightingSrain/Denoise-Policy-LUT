@@ -26,12 +26,13 @@ MAX_EPISODE = 100000
 GAMMA = 0.95
 N_ACTIONS = 7
 LR = 0.0001
-SAMPLING_INTERVAL = 2
+SAMPLING_INTERVAL = 4
 
 
 model = PPO(N_ACTIONS).to(device)
 # model.load_state_dict(torch.load("GaussianFilterHybridMax_15/GaussianModela16100_33.482850886408976_.pth"))
-model.load_state_dict(torch.load("GaussianFilterHybridMax_15/GaussianModela25900_31.585306556305433_.pth"))
+# model.load_state_dict(torch.load("GaussianFilterHybridMax_15/GaussianModela25900_31.585306556305433_.pth")) # 正在用的
+model.load_state_dict(torch.load("GaussianFilterHybridMax_15/GaussianModela4700_31.437196857989484_.pth"))
 # model = torch.load("../MixFilterModel/MixModela30000_.pth")
 # for k in m.keys():
 #     print(k)

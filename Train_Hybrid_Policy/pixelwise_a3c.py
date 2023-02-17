@@ -6,7 +6,7 @@ from torch.autograd import Variable
 import torch.nn.functional as F
 from torch import autograd
 from torch.distributions import Categorical, Normal, Independent
-from config import config
+from Train_Hybrid_Policy.config import config
 
 
 class PixelWiseA3C_InnerState():
@@ -92,11 +92,12 @@ class PixelWiseA3C_InnerState():
     def update(self, statevar):
         assert self.t_start < self.t
         if statevar is None:
-            R = torch.zeros(self.batch_size, 1, 63, 63).cuda()
+            R = torch.zeros(self.batch_size, 1, config.img_size, config.img_size).cuda()
         else:
             # _, vout = self.model.pi_and_v(statevar)
             _, _, _, vout = self.model(statevar)
             R = vout.detach()
+
         pi_loss = 0
         v_loss = 0
 
@@ -105,7 +106,7 @@ class PixelWiseA3C_InnerState():
             R += self.past_rewards[i]
             v = self.past_values[i]
 
-            advantage = R - v.detach()  # (b, 1, 63, 63)
+            advantage = R - v.detach()
             log_prob = self.past_action_log_prob[i]
             entropy = self.past_action_entropy[i]
 
@@ -152,7 +153,21 @@ class PixelWiseA3C_InnerState():
         std_sq = std.pow(2)
         logproba = - 0.5 * math.log(2 * math.pi) - logstd - (x - mean).pow(2) / (2 * std_sq)
         return logproba
+    def get_action(self, state):
+        statevar = torch.Tensor(state).cuda()
+        pout, mean, logstd, vout = self.model(statevar)
+        n, num_actions, h, w = pout.shape
 
+        p_trans = pout.permute([0, 2, 3, 1]).contiguous().view(-1, pout.shape[1])
+        dist = Categorical(p_trans)
+        action = dist.sample()
+
+        std = torch.exp(logstd)
+        continue_dist = Normal(mean, std)
+        continue_dist = Independent(continue_dist, 1)
+        continue_act = continue_dist.sample()
+        return action.view(n, h, w).detach().cpu().numpy(), \
+               continue_act.detach().cpu().numpy()
     def act_and_train(self, state, reward, test=False, ensemble=False):
         statevar = torch.Tensor(state).cuda()
         self.past_rewards[self.t - 1] = torch.Tensor(reward).cuda()
@@ -220,7 +235,7 @@ class PixelWiseA3C_InnerState():
                    torch.exp(log_action_prob).squeeze(1).detach().cpu(), \
                    tst_act
         else:
-            return tst_act, tst_act_par.numpy(), pout.detach().cpu().numpy()
+            return tst_act.numpy(), tst_act_par.numpy(), pout.detach().cpu().numpy()
         # else:
         #     return action.view(n, h, w).detach().cpu(), \
         #        torch.exp(log_action_prob).squeeze(1).detach().cpu(), \
@@ -238,12 +253,14 @@ class PixelWiseA3C_InnerState():
     def val(self, agent, state, raw_val, test_num):
         self.model.eval()
 
-        current_state = state.State((config.BATCH_SIZE, 1, 63, 63), config.MOVE_RANGE)
-        reward = np.zeros((config.BATCH_SIZE, 1, 63, 63))
+        current_state = state.State((config.BATCH_SIZE, 1,
+                                     config.img_tst_size, config.img_tst_size), config.MOVE_RANGE)
+        reward = np.zeros((config.BATCH_SIZE, 1,
+                           config.img_tst_size, config.img_tst_size))
 
         raw_n = np.random.normal(0, config.sigma, raw_val.shape).astype(raw_val.dtype) / 255.
-        # ins_noisy = np.clip(raw_val + raw_n, a_min=0., a_max=1.)
-        current_state.reset(raw_val, raw_n)
+        ins_noisy = np.clip(raw_val + raw_n, a_min=0., a_max=1.)
+        current_state.reset(ins_noisy)
         res = None
         for i in range(test_num):
 

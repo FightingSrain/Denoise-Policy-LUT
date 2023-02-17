@@ -18,7 +18,7 @@ from numba import jit
 # import Train_Hybrid_Policy.State_Bilateral as State
 import Train_Hybrid_Policy.State_Gaussian as State
 from collections import Counter
-
+from skimage.metrics import structural_similarity as ssim
 
 
 
@@ -50,10 +50,11 @@ def interp_LUTs_main():
     # Test clean images
     files_gt = glob.glob(TEST_DIR + '*.png')
     files_gt.sort()
+    lens = len(files_gt)
     # ---------------
     action_num = np.zeros((5, config.N_ACTIONS))
     total_psnr = 0
-
+    total_ssim = 0
     # ---------------
     for ti, fn in enumerate(tqdm(files_gt)):
         # Load noise image and gt
@@ -164,6 +165,12 @@ def interp_LUTs_main():
             current_state.step(D_action, C_action)
             if i == 4:
                 res = current_state.image[0, 0, :, :]
+
+                # guide_res = cv2.ximgproc.guidedFilter(ins_noisy[0, 0, :, :].astype(np.float32),
+                #                                       res.astype(np.float32), 5, 0.01, -1)
+                # cv2.imshow('res', (res * 255).astype(np.uint8))
+                # cv2.imshow('guide_res', (guide_res * 255).astype(np.uint8))
+                # cv2.waitKey(0)
                 # cv2.imwrite("./res_img/Noise_img_Set12/Noise{}.png".format(ti), (ins_noisy[0, 0, :, :] * 255).astype(np.uint8))
                 # cv2.imwrite("./res_img/Hybrid_Set12/res{}.png".format(ti), (res * 255).astype(np.uint8))
                 # cv2.imwrite("../res_img/Bilateral_Set12/res{}.png".format(ti),
@@ -179,6 +186,22 @@ def interp_LUTs_main():
                 #                          h=15, templateWindowSize=7, searchWindowSize=21)
                 # t2s = time.time()
                 # print("NLM time: ", (t2s - t1s)*1000, "ms")
+                # -------------filter psnr and ssim--------------
+                # filter = cv2.GaussianBlur(ins_noisy[0, 0, :, :], (5, 5), 0.5)
+                # filter = cv2.bilateralFilter(ins_noisy[0, 0, :, :].astype(np.float32), d=5, sigmaColor=0.5, sigmaSpace=5)
+                # filter = ins_noisy[0, 0, :, :].astype(np.float32)
+                filter = cv2.fastNlMeansDenoising((ins_noisy[0, 0, :, :] * 255).astype(np.uint8),
+                                                   h=15, templateWindowSize=7, searchWindowSize=21)
+                filter_psnr = cv2.PSNR((filter).astype(np.uint8),
+                                             (img_gts[0, 0, :, :] * 255).astype(np.uint8))
+                filter_ssim = ssim((filter).astype(np.uint8),
+                                             (img_gts[0, 0, :, :] * 255).astype(np.uint8))
+                print(filter_psnr, filter_ssim)
+                total_psnr += filter_psnr
+                total_ssim += filter_ssim
+                # print("res_psnr: ", gauss_psnr/lens)
+                # print("res_ssim: ", gauss_ssim/lens)
+
             # ori_psnr = cv2.PSNR((ins_noisy[0, 0, :, :]*255).astype(np.uint8),
             #                     (img_gts[0, 0, :, :]*255).astype(np.uint8))
             # print('ori_psnr: ', ori_psnr)
@@ -196,10 +219,13 @@ def interp_LUTs_main():
         t2 = time.time()
         print('消耗时间：', (t2 - t1)*1000, "ms")
 
-        total_psnr += cv2.PSNR((res * 255).astype(np.uint8),
-                               (img_gts[0, 0, :, :] * 255).astype(np.uint8))
-    print(total_psnr/68.)
-
+        # total_psnr += cv2.PSNR((res * 255).astype(np.uint8),
+        #                        (img_gts[0, 0, :, :] * 255).astype(np.uint8))
+        #
+        # total_ssim += ssim((res * 255).astype(np.uint8),
+        #                        (img_gts[0, 0, :, :] * 255).astype(np.uint8))
+    print(total_psnr / lens)
+    print(total_ssim / lens)
 
     # --------------------------
     # category_names = ['Pixel-1', 'Do nothing',

@@ -37,8 +37,8 @@ class PPO(nn.Module):
         for m in self.modules():
             classname = m.__class__.__name__
             if classname.lower().find('conv') != -1:
-                # nn.init.orthogonal(m.weight)  # 正交初始化
-                nn.init.kaiming_normal(m.weight)  # He初始化
+                nn.init.orthogonal(m.weight)  # 正交初始化
+                # nn.init.kaiming_normal(m.weight)  # He初始化
                 if m.bias is not None:
                     nn.init.constant(m.bias, 0)
             elif classname.find('bn') != -1:
@@ -85,13 +85,16 @@ class PPO(nn.Module):
         return Dpolicy, mean, logstd, value
 
     def ensemble_pi_and_v(self, x, rot1=0, rot2=0, pad=2):
-        if rot1 == 0 and rot2 == 0:
+        if rot1 == 0 and rot2 == 0:  # no rotation
             policy, mean, logstd, value = self.pi_and_v(F.pad(x, (0, pad, 0, pad), mode='reflect'))
-        else:
+        elif rot1 == -1 and rot2 == -1:  # no rotation and pad = 1
+            policy, mean, logstd, value = self.pi_and_v(F.pad(x, (pad, pad, pad, pad), mode='reflect'))
+        else: # rotation
             x = torch.rot90(x, rot1, [2, 3])
             policy, mean, logstd, value = self.pi_and_v(F.pad(x, (0, pad, 0, pad), mode='reflect'))
             policy = torch.rot90(policy, rot2, [2, 3])
             value = torch.rot90(value, rot2, [2, 3])
+
         return policy, mean, logstd, value
 
     def forward(self, x):
@@ -99,11 +102,12 @@ class PPO(nn.Module):
         policy2, mean2, logstd2, value2 = self.ensemble_pi_and_v(x, rot1=2, rot2=2, pad=2)
         policy3, mean3, logstd3, value3 = self.ensemble_pi_and_v(x, rot1=3, rot2=1, pad=2)
         policy4, mean4, logstd4, value4 = self.ensemble_pi_and_v(x, rot1=0, rot2=0, pad=2)
+        policy5, mean5, logstd5, value5 = self.ensemble_pi_and_v(x, rot1=-1, rot2=-1, pad=1)
 
-        policy = F.softmax((policy1 + policy2 + policy3 + policy4) / 4., dim=1)
-        value = (value1 + value2 + value3 + value4) / 4.
-        mean = (mean1 + mean2 + mean3 + mean4) / 4.
-        logstd = (logstd1 + logstd2 + logstd3 + logstd4) / 4.
+        policy = F.softmax((policy1 + policy2 + policy3 + policy4 + policy5) / 5., dim=1)
+        value = (value1 + value2 + value3 + value4 + value5) / 5.
+        mean = (mean1 + mean2 + mean3 + mean4 + mean5) / 5.
+        logstd = (logstd1 + logstd2 + logstd3 + logstd4 + logstd5) / 5.
         return policy, mean, logstd, value
 
 

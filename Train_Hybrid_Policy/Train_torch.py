@@ -17,6 +17,7 @@ from FCN_sm_4 import *
 from mini_batch_loader import MiniBatchLoader
 from pixelwise_a3c import *
 from config import config
+from genMask import masksamplingv2
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
@@ -37,9 +38,10 @@ def main():
         TESTING_DATA_PATH,
         VAL_DATA_PATH,
         IMAGE_DIR_PATH,
-        config.img_size)
+        config.corp_size)
 
-    current_state = State.State((config.BATCH_SIZE, 1, 63, 63), config.MOVE_RANGE)
+    current_state = State.State((config.BATCH_SIZE, 1, config.img_size, config.img_size), config.MOVE_RANGE)
+    current_state_ori = State.State((config.BATCH_SIZE, 1, config.img_size, config.img_size), config.MOVE_RANGE)
     agent = PixelWiseA3C_InnerState(model, optimizer, config.BATCH_SIZE, config.EPISODE_LEN, config.GAMMA)
 
     # train dataset
@@ -61,16 +63,28 @@ def main():
 
         label = copy.deepcopy(raw_x)
         raw_n = np.random.normal(0, config.sigma, label.shape).astype(label.dtype) / 255.
-        # ins_noisy = np.clip(label + raw_n, a_min=0., a_max=1.)
-        current_state.reset(raw_x, raw_n)
-        reward = np.zeros(label.shape, label.dtype)
-        sum_reward = 0
+        ori_ins_noisy = np.clip(label + raw_n, a_min=0., a_max=1.)
+        current_state_ori.reset(ori_ins_noisy.copy())
 
         if n_epi % 10 == 0:
             image = np.asanyarray(label[10].transpose(1, 2, 0) * 255, dtype=np.uint8)
             image = np.squeeze(image)
             cv2.imshow("label", image)
             cv2.waitKey(1)
+
+        # 生成自监督图像对
+        patten = torch.randint(0, 4, (1,))
+        gen_mask = masksamplingv2()
+        ins_noisy, label = gen_mask(torch.Tensor(ori_ins_noisy), patten.item())
+
+
+        current_state.reset(ins_noisy.copy())
+        reward = np.zeros(label.shape, label.dtype)
+        sum_reward = 0
+
+        # raw_ns = np.random.normal(0, config.sigma, label.shape).astype(label.dtype) / 255.
+        # label = np.clip(label + raw_ns, a_min=0., a_max=1.)
+        # label = labels.copy()
 
         for t in range(config.EPISODE_LEN):
 
@@ -83,6 +97,13 @@ def main():
 
             previous_image = np.clip(current_state.image.copy(), a_min=0., a_max=1.)
             action, action_par, action_prob, tst_act = agent.act_and_train(current_state.tensor, reward)
+            current_state.step(action, action_par)
+            #-------------------
+            # previous_image_ori = np.clip(current_state_ori.image.copy(), a_min=0., a_max=1.)
+            # action_ori, action_par_ori = agent.get_action(current_state_ori.tensor)
+            # current_state_ori.step(action_ori, action_par_ori)
+            # pre_ori1, pre_ori2 = gen_mask(torch.Tensor(previous_image_ori), patten.item())
+            # cur_ori1, cur_ori2 = gen_mask(torch.Tensor(current_state_ori.image), torch.randint(0, 4, (1,)).item())
 
             if n_epi % 150 == 0:
                 print(action[10])
@@ -96,13 +117,16 @@ def main():
                 # paint_amap(action[10])
                 # paint_scatter(tst_act[10], current_state.image[10])
 
-            current_state.step(action, action_par)
-
+            # reward = (np.square(label - previous_image) + 8 * np.square(previous_image - label - (pre_ori1 - pre_ori2))) - \
+            #          (np.square(label - current_state.image) + 8 * np.square(current_state.image - label - (cur_ori1 - cur_ori2)))
+            # reward *= 255
             reward = np.square(label - previous_image) * 255 - \
                      np.square(label - current_state.image) * 255
             # reward = -np.square(current_state.image - label) * 255
             sum_reward += np.mean(reward) * np.power(config.GAMMA, t)
-
+        print(reward.shape)
+        print(current_state.tensor.shape)
+        print("------------")
         agent.stop_episode_and_train(current_state.tensor, reward, True)
 
         torch.cuda.empty_cache()
