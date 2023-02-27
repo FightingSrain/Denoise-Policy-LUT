@@ -40,30 +40,39 @@ class MiniBatchLoader(object):
         return cs
 
     def load_training_data(self, indices):
-        return self.load_data(self.training_path_infos, indices, augment=True)
+        return self.load_data(self.training_path_infos, indices, augment=True, color=True)
 
     def load_val_data(self, indices):
-        return self.load_data(self.val_path_infos, indices, validation=True)
+        return self.load_data(self.val_path_infos, indices, validation=True, color=True)
 
     def load_testing_data(self, indices):
-        return self.load_data(self.testing_path_infos, indices)
+        return self.load_data(self.testing_path_infos, indices, color=False)
 
     # test ok
-    def load_data(self, path_infos, indices, augment=False, validation=False):
+    def load_data(self, path_infos, indices, augment=False, validation=False, color=False):
         mini_batch_size = len(indices)
-        in_channels = 1
+        if color:
+            in_channels = 3
+        else:
+            in_channels = 1
 
         if augment:
             xs = np.zeros((mini_batch_size, in_channels, self.crop_size, self.crop_size)).astype(np.float32)
 
             for i, index in enumerate(indices):
                 path = path_infos[index]
-
-                img = cv2.imread(path, 0)
+                if color:
+                    img = cv2.imread(path, 1)
+                    h, w, c = img.shape
+                else:
+                    img = cv2.imread(path, 0)
+                    h, w = img.shape
+                    c = 1
                 if img is None:
                     raise RuntimeError("invalid image: {i}".format(i=path))
-                h, w = img.shape
 
+                if h < self.crop_size or w < self.crop_size:
+                    continue
                 if np.random.rand() > 0.5:
                     img = np.fliplr(img)
 
@@ -76,10 +85,22 @@ class MiniBatchLoader(object):
 
                 rand_range_h = h - self.crop_size
                 rand_range_w = w - self.crop_size
+
                 x_offset = np.random.randint(rand_range_w)
                 y_offset = np.random.randint(rand_range_h)
-                img = img[y_offset:y_offset + self.crop_size, x_offset:x_offset + self.crop_size]
-                xs[i, 0, :, :] = (img / 255.).astype(np.float32)
+                if c == 3:
+                    img = img[y_offset:y_offset + self.crop_size, x_offset:x_offset + self.crop_size, :]
+                    xs[i, :, :, :] = (img / 255.).transpose(2, 0, 1).astype(np.float32)
+                else:
+                    # print(img.shape)
+                    img = img[y_offset:y_offset + self.crop_size, x_offset:x_offset + self.crop_size]
+                    # print(img.shape)
+                    xs[i, 0, :, :] = (img / 255.).astype(np.float32)
+                # if color:
+                #     xs[i, :, :, :] = (img / 255.).astype(np.float32)
+                # else:
+                #     xs[i, :, :, :] = (img / 255.).astype(np.float32)
+
 
         elif validation:
             xs = np.zeros((mini_batch_size, in_channels, self.crop_size, self.crop_size)).astype(np.float32)
@@ -87,13 +108,22 @@ class MiniBatchLoader(object):
             for i, index in enumerate(indices):
                 path = path_infos[index]
 
-                img = cv2.imread(path, 0)
+                if color:
+                    img = cv2.imread(path, 1)
+                else:
+                    img = np.expand_dims(cv2.imread(path, 0), 2)
                 if img is None:
                     raise RuntimeError("invalid image: {i}".format(i=path))
-                h, w = img.shape
-                xs[i, :, :, :] = cv2.resize(np.asarray(img),
+                w, h, c = img.shape
+                # print(img.shape)
+                if c == 3:
+                    xs[i, :, :, :] = cv2.resize(np.asarray(img),
                                     (self.crop_size, self.crop_size),
                                     interpolation=cv2.INTER_AREA).transpose(2, 0, 1) / 255.
+                else:
+                    xs[i, 0, :, :] = cv2.resize(np.asarray(img).squeeze(),
+                                    (self.crop_size, self.crop_size),
+                                    interpolation=cv2.INTER_AREA) / 255.
 
         elif mini_batch_size == 1:
             for i, index in enumerate(indices):

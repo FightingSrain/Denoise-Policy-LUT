@@ -6,6 +6,10 @@ from torch.autograd import Variable
 import torch.nn.functional as F
 from torch import autograd
 from torch.distributions import Categorical, Normal, Independent
+from skimage.metrics import structural_similarity as ssim_cal
+from skimage.metrics import peak_signal_noise_ratio as psnr_cal
+
+
 from Train_Hybrid_Policy.config import config
 
 
@@ -76,7 +80,6 @@ class PixelWiseA3C_InnerState():
 
     def update_grad(self, target, source):
         target_params = dict(target.named_parameters())
-        # print(target_params)
         for param_name, param in source.named_parameters():
             if target_params[param_name].grad is None:
                 if param.grad is None:
@@ -92,7 +95,7 @@ class PixelWiseA3C_InnerState():
     def update(self, statevar):
         assert self.t_start < self.t
         if statevar is None:
-            R = torch.zeros(self.batch_size, 1, config.img_size, config.img_size).cuda()
+            R = torch.zeros(self.batch_size*3, 1, config.img_size, config.img_size).cuda()
         else:
             # _, vout = self.model.pi_and_v(statevar)
             _, _, _, vout = self.model(statevar)
@@ -103,6 +106,8 @@ class PixelWiseA3C_InnerState():
 
         for i in reversed(range(self.t_start, self.t)):
             R *= self.gamma
+
+            # R = self.model.conv_smooth(R)
             R += self.past_rewards[i]
             v = self.past_values[i]
 
@@ -134,8 +139,9 @@ class PixelWiseA3C_InnerState():
 
         self.optimizer.zero_grad()
         total_loss.backward()
-        self.optimizer.step()
+        # self.shared_model.zero_grad()
         self.update_grad(self.shared_model, self.model)
+        self.optimizer.step()
         self.sync_parameters()
 
         self.past_action_log_prob = {}
@@ -252,16 +258,16 @@ class PixelWiseA3C_InnerState():
 
     def val(self, agent, state, raw_val, test_num):
         self.model.eval()
-
-        current_state = state.State((config.BATCH_SIZE, 1,
+        val_pnsr = 0.
+        val_ssim = 0.
+        current_state = state.State((config.BATCH_SIZE, 3,
                                      config.img_tst_size, config.img_tst_size), config.MOVE_RANGE)
-        reward = np.zeros((config.BATCH_SIZE, 1,
-                           config.img_tst_size, config.img_tst_size))
+        reward = np.zeros((config.BATCH_SIZE*3, 1, config.img_size, config.img_size))
 
-        raw_n = np.random.normal(0, config.sigma, raw_val.shape).astype(raw_val.dtype) / 255.
+        raw_n = np.random.normal(0, config.SIGMA, raw_val.shape).astype(raw_val.dtype) / 255.
         ins_noisy = np.clip(raw_val + raw_n, a_min=0., a_max=1.)
         current_state.reset(ins_noisy)
-        res = None
+        val_res = None
         for i in range(test_num):
 
             action, action_par, _ = agent.act_and_train(current_state.tensor,
@@ -270,11 +276,20 @@ class PixelWiseA3C_InnerState():
                                                  ensemble=True)
             current_state.step(action, action_par)
             if i == test_num - 1:
-                res = copy.deepcopy(current_state.image[:, 0:1, :, :])
+                val_res = copy.deepcopy(current_state.image)
                 break
 
-        mse = np.mean((res - raw_val) ** 2)
-        psnr = 10 * np.log10(1. / mse)
-
+        for i in range(0, 12):
+            psnr = psnr_cal(raw_val[i, :, :, :].transpose(1,2,0),
+                            val_res[i, :, :, :].transpose(1,2,0))
+            # print(raw_val.shape)
+            # print(val_res.shape)
+            # print("CCCCCCCCCCCCCC")
+            ssim = ssim_cal(raw_val[i, :, :, :].transpose(1,2,0),
+                            val_res[i, :, :, :].transpose(1,2,0), multichannel=True)
+            val_pnsr += psnr
+            val_ssim += ssim
+        val_pnsr /= 12.
+        val_ssim /= 12.
         self.model.train()
-        return psnr
+        return val_pnsr, val_ssim

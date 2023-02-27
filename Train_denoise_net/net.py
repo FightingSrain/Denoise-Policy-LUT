@@ -11,35 +11,16 @@ torch.manual_seed(1234)
 class Net(nn.Module):
     def __init__(self):
         super(Net, self).__init__()
-        # self.action_n = Action_N
-        kernel_size = 3
-        kernel = torch.randn((64, 1, kernel_size, kernel_size))
-        # kernel = torch.randn((64, 1, kernel_size, kernel_size))
-        mask = torch.Tensor([[[[1,0,1],
-                [0, 1, 0],
-                [1, 0 ,1]]]])
-        print(mask.size())
-        print("*****")
 
-        self.weight = nn.Parameter(data=kernel*mask, requires_grad=True)
-        # self.weight[:, :, 0:2, :].detach().fill_(0.)
-        # self.weight[:, :, :, 0:2].detach().fill_(0.)
-        # self.weight[:, :, 3:4, :].detach().fill_(0.)
-        # self.weight[:, :, :, 3:4].detach().fill_(0.)
-        bias = torch.zeros((64))
-        self.bias = nn.Parameter(data=bias, requires_grad=True)
-        self.conv1 = nn.Conv2d(1, 64, 1, stride=1, padding=0, dilation=1)
+        self.conv1 = nn.Conv2d(3, 64, [2, 2], stride=1, padding=0, dilation=2)
+
         self.conv2 = nn.Conv2d(64, 64, 1, stride=1, padding=0, dilation=1)
         self.conv3 = nn.Conv2d(64, 64, 1, stride=1, padding=0, dilation=1)
         self.conv4 = nn.Conv2d(64, 64, 1, stride=1, padding=0, dilation=1)
 
-        self.conv4p = nn.Conv2d(64, 64, 1, stride=1, padding=0, dilation=1)
-        self.conv5p = nn.Conv2d(64, 64, 1, stride=1, padding=0, dilation=1)
-        self.conv6p = nn.Conv2d(64, 1, 1, stride=1, padding=0, dilation=1)
-
-        self.conv4v = nn.Conv2d(64, 64, 1, stride=1, padding=0, dilation=1)
-        self.conv5v = nn.Conv2d(64, 64, 1, stride=1, padding=0, dilation=1)
-        self.conv6v = nn.Conv2d(64, 1, 1, stride=1, padding=0, dilation=1)
+        self.conv5 = nn.Conv2d(64, 64, 1, stride=1, padding=0, dilation=1)
+        self.conv6 = nn.Conv2d(64, 64, 1, stride=1, padding=0, dilation=1)
+        self.conv7 = nn.Conv2d(64, 3, 1, stride=1, padding=0, dilation=1)
 
         # Init weights
         for m in self.modules():
@@ -54,37 +35,43 @@ class Net(nn.Module):
 
     def pi_and_v(self, x):
         B, _, H, W = x.size()
-        x_in = x[:, 0:1, :, :].reshape(B * 1, 1, H, W)
-        # x = self.conv1(x_in)
-        x = F.conv2d(x_in, self.weight, stride=1, padding=1, bias=self.bias)
-        print(self.weight[0,0,:,:])
-        # x = F.conv2d(x_in, self.weight, stride=1, padding=1, padding_model='reflect', groups=1, bias=self.bias)
+        x_in = x.reshape(B, 3, H, W)
+        x = self.conv1(x_in)
         x = self.conv2(F.relu(x))
         x = self.conv3(F.relu(x))
         x = self.conv4(F.relu(x))
-        p = self.conv4p(F.relu(x))
-        p = self.conv5p(F.relu(p))
-        res = F.sigmoid(self.conv6p(F.relu(p)))
+        x = self.conv5(F.relu(x))
+        x = self.conv6(F.relu(x))
+        res = self.conv7(F.relu(x))
 
         return res
 
     def forward(self, x):
         x1 = copy.deepcopy(x)
-        x1[:, 0:1, :, :] = torch.rot90(x1[:, 0:1, :, :], 1, [2, 3])
+        x1 = torch.rot90(x1, 1, [2, 3])
+        x1 = F.pad(x1, (0, 2, 0, 2), mode='reflect')
         res1 = self.pi_and_v(x1)
         res1 = torch.rot90(res1, 3, [2, 3])
 
         x2 = copy.deepcopy(x)
-        x2[:, 0:1, :, :] = torch.rot90(x2[:, 0:1, :, :], 2, [2, 3])
+        x2 = torch.rot90(x2, 2, [2, 3])
+        x2 = F.pad(x2, (0, 2, 0, 2), mode='reflect')
         res2 = self.pi_and_v(x2)
         res2 = torch.rot90(res2, 2, [2, 3])
 
         x3 = copy.deepcopy(x)
-        x3[:, 0:1, :, :] = torch.rot90(x3[:, 0:1, :, :], 3, [2, 3])
+        x3 = torch.rot90(x3, 3, [2, 3])
+        x3 = F.pad(x3, (0, 2, 0, 2), mode='reflect')
         res3 = self.pi_and_v(x3)
         res3 = torch.rot90(res3, 1, [2, 3])
 
         x4 = copy.deepcopy(x)
+        x4 = F.pad(x4, (0, 2, 0, 2), mode='reflect')
         res4 = self.pi_and_v(x4)
-        res = (res1 + res2 + res3 + res4) / 4.
+        # print(res1.size())
+        # print(res2.size())
+        # print(res3.size())
+        # print(res4.size())
+        # print("---------")
+        res = torch.tanh((res1 + res2 + res3 + res4) / 4.) + x
         return res

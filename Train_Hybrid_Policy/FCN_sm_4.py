@@ -14,6 +14,7 @@ class PPO(nn.Module):
         self.action_n = Action_N
 
         self.conv1 = nn.Conv2d(1, 64, [2, 2], stride=1, padding=0, dilation=2)
+
         self.conv2 = nn.Conv2d(64, 64, 1, stride=1, padding=0, dilation=1)
         self.conv3 = nn.Conv2d(64, 64, 1, stride=1, padding=0, dilation=1)
         self.conv4 = nn.Conv2d(64, 64, 1, stride=1, padding=0, dilation=1)
@@ -27,18 +28,20 @@ class PPO(nn.Module):
         self.mean = nn.Conv2d(64, self.action_n, 1, stride=1, padding=0, dilation=1)
         self.logstd = nn.Parameter(torch.zeros(1, self.action_n), requires_grad=True)
 
-
-
         self.conv4v = nn.Conv2d(64, 64, 1, stride=1, padding=0, dilation=1)
         self.conv5v = nn.Conv2d(64, 64, 1, stride=1, padding=0, dilation=1)
         self.conv6v = nn.Conv2d(64, 1, 1, stride=1, padding=0, dilation=1)
+        kernel = torch.ones((1, 1, 33, 33))
+        self.weight = nn.Parameter(data=kernel, requires_grad=True)
+        self.bias = nn.Parameter(data=torch.zeros(1), requires_grad=False)
+        # self.convR = nn.Conv2d(1, 1, self.weight, stride=1, padding=16, bias=False)
 
         # Init weights
         for m in self.modules():
             classname = m.__class__.__name__
             if classname.lower().find('conv') != -1:
-                nn.init.orthogonal(m.weight)  # 正交初始化
-                # nn.init.kaiming_normal(m.weight)  # He初始化
+                # nn.init.orthogonal(m.weight)  # 正交初始化
+                nn.init.kaiming_normal(m.weight)  # He初始化
                 if m.bias is not None:
                     nn.init.constant(m.bias, 0)
             elif classname.find('bn') != -1:
@@ -48,6 +51,9 @@ class PPO(nn.Module):
     def parse_p(self, u_out):
         p = torch.mean(u_out.view(u_out.shape[0], u_out.shape[1], -1), dim=2)
         return p
+    def conv_smooth(self, x):
+        x = F.conv2d(x, self.weight, self.bias, stride=1, padding=16)
+        return x
 
     def pi_and_v(self, x):
         B, _, H, W = x.size()
@@ -102,12 +108,12 @@ class PPO(nn.Module):
         policy2, mean2, logstd2, value2 = self.ensemble_pi_and_v(x, rot1=2, rot2=2, pad=2)
         policy3, mean3, logstd3, value3 = self.ensemble_pi_and_v(x, rot1=3, rot2=1, pad=2)
         policy4, mean4, logstd4, value4 = self.ensemble_pi_and_v(x, rot1=0, rot2=0, pad=2)
-        policy5, mean5, logstd5, value5 = self.ensemble_pi_and_v(x, rot1=-1, rot2=-1, pad=1)
+        # policy5, mean5, logstd5, value5 = self.ensemble_pi_and_v(x, rot1=-1, rot2=-1, pad=1)
 
-        policy = F.softmax((policy1 + policy2 + policy3 + policy4 + policy5) / 5., dim=1)
-        value = (value1 + value2 + value3 + value4 + value5) / 5.
-        mean = (mean1 + mean2 + mean3 + mean4 + mean5) / 5.
-        logstd = (logstd1 + logstd2 + logstd3 + logstd4 + logstd5) / 5.
+        policy = F.softmax((policy1 + policy2 + policy3 + policy4) / 4., dim=1)
+        value = (value1 + value2 + value3 + value4) / 4.
+        mean = (mean1 + mean2 + mean3 + mean4) / 4.
+        logstd = (logstd1 + logstd2 + logstd3 + logstd4) / 4.
         return policy, mean, logstd, value
 
 

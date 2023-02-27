@@ -16,22 +16,20 @@ from Train_denoise_net.config import config
 from Train_denoise_net.utils import *
 from Train_denoise_net.genMask import *
 from Train_denoise_net.lab_loss import *
-from Train_denoise_net.Myloss import *
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 
-TRAINING_DATA_PATH = "train.txt"
-TRAINING_DATA_PATH_GT = "train.txt"
-TESTING_DATA_PATH = "train.txt"
-# TRAINING_DATA_PATH = "SIDDNOISY.txt"
-# TRAINING_DATA_PATH_GT = "SIDDGT.txt"
-# TESTING_DATA_PATH = "SIDDNOISY.txt"
+# TRAINING_DATA_PATH = "train.txt"
+# TESTING_DATA_PATH = "train.txt"
+TRAINING_DATA_PATH = "SIDDNOISY.txt"
+TRAINING_DATA_PATH_GT = "SIDDGT.txt"
+TESTING_DATA_PATH = "SIDDNOISY.txt"
 
 VAL_DATA_PATH = "val.txt"
 IMAGE_DIR_PATH = "..//"
 
 labloss = TotalLoss()
-L_color_rate = L_color_rate()
+
 def paint_val(val_PSNR):
     plt.plot(val_PSNR)
     plt.grid()
@@ -59,9 +57,8 @@ def main():
     val_data_size = MiniBatchLoader.count_paths(VAL_DATA_PATH)
     indices_val = np.random.permutation(val_data_size)
 
-    r_val = indices_val[0: 100]
+    r_val = indices_val[0: 12]
     raw_val = mini_batch_loader.load_val_data(r_val)
-    len_val = len(raw_val)
     ValData = []
     max_psnr = -math.inf
     sigma = 25
@@ -72,14 +69,14 @@ def main():
         raw_x, gt = mini_batch_loader.load_training_data(r)
 
 
-        label = copy.deepcopy(raw_x)
-        raw_n = np.random.normal(0, sigma, label.shape).astype(label.dtype) / 255.
-        ins_noisy = np.clip(label + raw_n, a_min=0., a_max=1.)
-        ins_noisy = torch.Tensor(ins_noisy).float().cuda()
-        label = torch.Tensor(label).float().cuda()
+        # label = copy.deepcopy(raw_x)
+        # raw_n = np.random.normal(0, sigma, label.shape).astype(label.dtype) / 255.
+        # ins_noisy = np.clip(label + raw_n*0, a_min=0., a_max=1.)
+        # ins_noisy = torch.Tensor(ins_noisy).float().cuda()
+        # label = torch.Tensor(label).float().cuda()
 
-        # label = torch.Tensor(copy.deepcopy(gt)).float().cuda()
-        # ins_noisy = torch.Tensor(copy.deepcopy(raw_x)).float().cuda()
+        label = torch.Tensor(copy.deepcopy(gt)).float().cuda()
+        ins_noisy = torch.Tensor(copy.deepcopy(raw_x)).float().cuda()
 
         # patten = torch.randint(0, 4, (1,))
         # gen_mask = masksamplingv2()
@@ -94,17 +91,12 @@ def main():
 
         denoised = model(ins_noisy)
         optimizer.zero_grad()
-        loss1 = F.mse_loss(denoised, label) * 255
-        # loss, _, _ = labloss(denoised, label)
-        loss2 = torch.mean(L_color_rate(denoised, label)) * 1
-
+        # loss = F.mse_loss(denoised, label) * 255
+        loss, _, _ = labloss(denoised, label)
         # loss = F.mse_loss(denoised1, label1) + 8 * F.mse_loss(denoised1 - label1, a_ins - a_label)
         # loss, _, _ = labloss(denoised1, label1)
         # loss += (8 * F.mse_loss(denoised1 - label1,
         #                         a_ins - a_label))
-        print("\nloss1:", loss1.data,
-              "\nloss2:", loss2.data)
-        loss = loss1
         loss.backward()
         optimizer.step()
         print("\niter: ", n_epi, "loss: ", loss.data)
@@ -123,18 +115,18 @@ def main():
         #     plt.close()
 
         if n_epi % 100 == 0:
-            image1 = np.asanyarray(np.clip(denoised[0, :, :, :].detach().cpu().numpy(), a_min=0., a_max=1.).transpose(1, 2, 0) * 255, dtype=np.uint8)
+            image1 = np.asanyarray(denoised[0, :, :, :].detach().cpu().numpy().transpose(1, 2, 0) * 255, dtype=np.uint8)
             image1 = np.squeeze(image1)
             cv2.imshow("denoise", image1)
 
-            image2 = np.asanyarray(ins_noisy[0, :, :, :].detach().cpu().numpy().transpose(1, 2, 0) * 255,
+            image1 = np.asanyarray(ins_noisy[0, :, :, :].detach().cpu().numpy().transpose(1, 2, 0) * 255,
                                    dtype=np.uint8)
-            image2 = np.squeeze(image2)
-            cv2.imshow("noisy", image2)
-            image3 = np.asanyarray(label[0, :, :, :].detach().cpu().numpy().transpose(1, 2, 0) * 255,
+            image1 = np.squeeze(image1)
+            cv2.imshow("noisy", image1)
+            image1 = np.asanyarray(label[0, :, :, :].detach().cpu().numpy().transpose(1, 2, 0) * 255,
                                    dtype=np.uint8)
-            image3 = np.squeeze(image3)
-            cv2.imshow("label", image3)
+            image1 = np.squeeze(image1)
+            cv2.imshow("label", image1)
 
             # image1 = np.asanyarray(raw_x[0,:,:,:].transpose(1,2,0) * 255, dtype=np.uint8)
             # image1 = np.squeeze(image1)
@@ -159,17 +151,15 @@ def main():
             raw_n = np.random.normal(0, sigma, raw_val.shape).astype(raw_val.dtype) / 255.
             ins_noisy_val = np.clip(raw_val + raw_n, a_min=0., a_max=1.)
             val_res = model(torch.Tensor(ins_noisy_val).float().to(device))
-            val_res = np.clip(val_res.detach().cpu().numpy(), a_min=0., a_max=1.)
+            val_res = val_res.detach().cpu().numpy()
 
-            for i in range(0, len_val):
-                psnr = psnr_cal(raw_val[i, :, :, :].transpose(1, 2, 0),
-                                val_res[i, :, :, :].transpose(1, 2, 0))
-                ssim = ssim_cal(raw_val[i, :, :, :].transpose(1, 2, 0),
-                                val_res[i, :, :, :].transpose(1, 2, 0), multichannel=True)
+            for i in range(0, 12):
+                psnr = psnr_cal(raw_val[i, :, :, :].transpose(1,2,0), val_res[i, :, :, :].transpose(1,2,0))
+                ssim = ssim_cal(raw_val[i, :, :, :].transpose(1,2,0), val_res[i, :, :, :].transpose(1,2,0), multichannel=True)
                 val_pnsr += psnr
                 val_ssim += ssim
-            val_pnsr /= len_val
-            val_ssim /= len_val
+            val_pnsr /= 12.
+            val_ssim /= 12.
             ValData.append([n_epi, val_pnsr, val_ssim])
             savevaltocsv(ValData, "val.csv", sigma) # 保存验证集数据
             # 绘图
@@ -188,6 +178,7 @@ def main():
         if i_index + config.BATCH_SIZE >= train_data_size:
             i_index = 0
             indices = np.random.permutation(train_data_size)
+            indices_gt = indices
         else:
             i_index += config.BATCH_SIZE
 

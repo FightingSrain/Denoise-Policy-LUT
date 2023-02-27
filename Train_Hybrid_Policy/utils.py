@@ -63,4 +63,4 @@ def savevaltocsv(records, filename, sigma):
     df = pd.DataFrame(columns=col_name, data=records)
     # index=False表示存储csv时没有默认的id索引
     # 如果文件不存在，则创建文件，如果文件存在，则追加内容
-    df.to_csv("./Val_PSNR_and_SSIM_{}/{}.csv".format(sigma, filename), encoding='utf-8', index=False)
+    df.to_csv("./Val_PSNR_and_SSIM_{}/{}".format(sigma, filename), encoding='utf-8', index=False)

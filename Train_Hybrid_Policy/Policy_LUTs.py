@@ -32,7 +32,7 @@ SAMPLING_INTERVAL = 4
 model = PPO(N_ACTIONS).to(device)
 # model.load_state_dict(torch.load("GaussianFilterHybridMax_15/GaussianModela16100_33.482850886408976_.pth"))
 # model.load_state_dict(torch.load("GaussianFilterHybridMax_15/GaussianModela25900_31.585306556305433_.pth")) # 正在用的
-model.load_state_dict(torch.load("GaussianFilterHybridMax_15/GaussianModela4700_31.437196857989484_.pth"))
+model.load_state_dict(torch.load("GaussianFilterHybridMax_15/GaussianModela45300_32.0438034571456_.pth"))
 # model = torch.load("../MixFilterModel/MixModela30000_.pth")
 # for k in m.keys():
 #     print(k)
@@ -123,8 +123,8 @@ with torch.no_grad():
 
 
         label = copy.deepcopy(raw_x)
-        raw_n = np.zeros_like(raw_x)  # no noise
-        current_state.reset(raw_x, raw_n)
+
+        current_state.reset(raw_x)
         reward = np.zeros(label.shape, label.dtype)
         sum_reward = 0
 
@@ -151,4 +151,5 @@ with torch.no_grad():
     LUTs = np.concatenate(LUT, 0)
     print("Resulting LUT size: ", LUTs.shape)
     # np.save("./Hybrid_LUTs_15/sample_{}_LUTs_{}".format(SAMPLING_INTERVAL, config.SIGMA), LUTs)
-    np.save("./Hybrid_LUTs_save/sample_{}_LUTs_{}".format(SAMPLING_INTERVAL, config.SIGMA), LUTs)
+    # np.save("./Hybrid_LUTs_save/sample_{}_LUTs_{}".format(SAMPLING_INTERVAL, config.SIGMA), LUTs)
+    np.save("./selfHybrid_LUTs_15/sample_{}_LUTs_{}".format(SAMPLING_INTERVAL, config.SIGMA), LUTs)

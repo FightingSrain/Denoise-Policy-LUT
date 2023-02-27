@@ -1,0 +1,12 @@
+D://Dataset//Set12/01.png
+D://Dataset//Set12/02.png
+D://Dataset//Set12/03.png
+D://Dataset//Set12/04.png
+D://Dataset//Set12/05.png
+D://Dataset//Set12/06.png
+D://Dataset//Set12/07.png
+D://Dataset//Set12/08.png
+D://Dataset//Set12/09.png
+D://Dataset//Set12/10.png
+D://Dataset//Set12/11.png
+D://Dataset//Set12/12.png

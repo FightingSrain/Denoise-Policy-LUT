@@ -28,7 +28,7 @@ SIGMA = config.SIGMA                  # Gaussian noise std
 L = 2 ** (8 - SAMPLING_INTERVAL) + 1
 q = 2**SAMPLING_INTERVAL
 
-LUT_PATH = "./Hybrid_LUTs_save/sample_{}_LUTs_{}.npy".format(SAMPLING_INTERVAL, SIGMA)    # Trained DP net params
+LUT_PATH = "./selfHybrid_LUTs_15/sample_{}_LUTs_{}.npy".format(SAMPLING_INTERVAL, SIGMA)    # Trained DP net params
 # TEST_DIR = '../img_tst/'      # Test images
 TEST_DIR = 'D://Dataset/BSD68/'      # Test images
 # TEST_DIR = 'D://Dataset/Set12/'      # Test images
@@ -88,14 +88,14 @@ def interp_LUTs_main():
         current_state = State.State((1, 1, h, w), config.MOVE_RANGE)
         raw_n = np.random.normal(0, SIGMA, img_gts.shape).astype(img_gts.dtype) / 255.
         ins_noisy = np.clip(img_gts + raw_n, a_min=0., a_max=1.)
-        current_state.reset(img_gts, raw_n)
+        current_state.reset(ins_noisy)
 
 
         res = None
         t1 = time.time()
 
         for i in range(5):
-            # cv2.imshow('current_state.image_ins', (current_state.image[0, 0, :, :] * 255).astype(np.uint8))
+            cv2.imshow('current_state.image_ins', (current_state.image[0, 0, :, :] * 255).astype(np.uint8))
             # cv2.waitKey(0)
 
 
@@ -135,6 +135,17 @@ def interp_LUTs_main():
                                           w, h, q, L, config.N_ACTIONS, 1)
             D_policy4 = np.rot90(policy4[:, :, :, 0:config.N_ACTIONS], 1, axes=[1, 2])
             C_policy4 = np.rot90(policy4[:, :, :, config.N_ACTIONS:config.N_ACTIONS * 2], 1, axes=[1, 2])
+
+
+
+            # ins5 = current_state.image[0, 0, :, :] * 255.
+            # ins5 = np.pad(ins5, ((1, 1), (1, 1)), mode='reflect')
+            # ins5 = np.expand_dims(ins5, 0)
+            # policy5 = FourSimplexInterp(LUT, ins5.astype(np.uint8),
+            #                               w, h, q, L, config.N_ACTIONS, 1)
+            # D_policy5 = policy5[:, :, :, 0:config.N_ACTIONS],
+            # C_policy5 = policy5[:, :, :, config.N_ACTIONS:config.N_ACTIONS * 2]
+
 
             D_action = np.argmax(Softmax(((D_policy1 + D_policy2 + D_policy3 + D_policy4) / 4.), 3), 3)
             # D_action = torch.argmax(F.softmax(torch.Tensor((D_policy1 + D_policy2 +
@@ -190,15 +201,15 @@ def interp_LUTs_main():
                 # filter = cv2.GaussianBlur(ins_noisy[0, 0, :, :], (5, 5), 0.5)
                 # filter = cv2.bilateralFilter(ins_noisy[0, 0, :, :].astype(np.float32), d=5, sigmaColor=0.5, sigmaSpace=5)
                 # filter = ins_noisy[0, 0, :, :].astype(np.float32)
-                filter = cv2.fastNlMeansDenoising((ins_noisy[0, 0, :, :] * 255).astype(np.uint8),
-                                                   h=15, templateWindowSize=7, searchWindowSize=21)
-                filter_psnr = cv2.PSNR((filter).astype(np.uint8),
-                                             (img_gts[0, 0, :, :] * 255).astype(np.uint8))
-                filter_ssim = ssim((filter).astype(np.uint8),
-                                             (img_gts[0, 0, :, :] * 255).astype(np.uint8))
-                print(filter_psnr, filter_ssim)
-                total_psnr += filter_psnr
-                total_ssim += filter_ssim
+                # filter = cv2.fastNlMeansDenoising((ins_noisy[0, 0, :, :] * 255).astype(np.uint8),
+                #                                    h=15, templateWindowSize=7, searchWindowSize=21)
+                # filter_psnr = cv2.PSNR((filter).astype(np.uint8),
+                #                              (img_gts[0, 0, :, :] * 255).astype(np.uint8))
+                # filter_ssim = ssim((filter).astype(np.uint8),
+                #                              (img_gts[0, 0, :, :] * 255).astype(np.uint8))
+                # print(filter_psnr, filter_ssim)
+                # total_psnr += filter_psnr
+                # total_ssim += filter_ssim
                 # print("res_psnr: ", gauss_psnr/lens)
                 # print("res_ssim: ", gauss_ssim/lens)
 
@@ -212,8 +223,8 @@ def interp_LUTs_main():
             # print("---------------------------------")
             # print(current_state.image.shape)
             # print("------------")
-            # cv2.imshow('current_state.image', (current_state.image[0, 0, :, :]*255).astype(np.uint8))
-            # cv2.waitKey(0)
+            cv2.imshow('current_state.image', (current_state.image[0, 0, :, :]*255).astype(np.uint8))
+            cv2.waitKey(0)
 
 
         t2 = time.time()
