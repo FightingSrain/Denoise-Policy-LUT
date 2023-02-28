@@ -56,20 +56,32 @@ class State():
             b, c, h, w = self.image.shape
             for i in range(0, b):
                 if np.sum(act[i, x] == self.move_range) > 0:
-                    gaussian[i, x] = np.expand_dims(cv2.GaussianBlur(self.image[i, x].squeeze().astype(np.float32), ksize=(5, 5),
-                                                                  sigmaX=sigmoid(par[i, x][3])), 0)
+                    # gaussian[i, x] = np.expand_dims(cv2.GaussianBlur(self.image[i, x].squeeze().astype(np.float32), ksize=(5, 5),
+                    #                                               sigmaX=sigmoid(par[i, x][3])), 0)
+                    gaussian[i, x] = np.expand_dims(
+                        cv2.GaussianBlur(self.image[i, x].squeeze().astype(np.float32), ksize=(5, 5),
+                                         sigmaX=0.5), 0)
                 if np.sum(act[i, x] == self.move_range + 1) > 0:
-                    bilateral[i, x] = np.expand_dims(cv2.bilateralFilter(self.image[i, x].squeeze().astype(np.float32), d=5,
-                                                                      sigmaColor=sigmoid(par[i, x][4])/10+0.1, sigmaSpace=5), 0)
+                    # bilateral[i, x] = np.expand_dims(cv2.bilateralFilter(self.image[i, x].squeeze().astype(np.float32), d=5,
+                    #                                                   sigmaColor=sigmoid(par[i, x][4])/10+0.1, sigmaSpace=5), 0)
+                    bilateral[i, x] = np.expand_dims(
+                        cv2.bilateralFilter(self.image[i, x].squeeze().astype(np.float32), d=5,
+                                            sigmaColor=0.1, sigmaSpace=5), 0)
                 if np.sum(act[i, x] == self.move_range + 2) > 0:
                     median[i, x] = np.expand_dims(cv2.medianBlur(self.image[i, x].squeeze().astype(np.float32), ksize=5), 0)  # 5
 
                 if np.sum(act[i, x] == self.move_range + 3) > 0:
-                    gaussian2[i, x] = np.expand_dims(cv2.GaussianBlur(self.image[i, x].squeeze().astype(np.float32), ksize=(5, 5),
-                                                                   sigmaX=1+sigmoid(par[i, x][6])), 0)
+                    # gaussian2[i, x] = np.expand_dims(cv2.GaussianBlur(self.image[i, x].squeeze().astype(np.float32), ksize=(5, 5),
+                    #                                                sigmaX=1+sigmoid(par[i, x][6])), 0)
+                    gaussian2[i, x] = np.expand_dims(
+                        cv2.GaussianBlur(self.image[i, x].squeeze().astype(np.float32), ksize=(5, 5),
+                                         sigmaX=1.5), 0)
                 if np.sum(act[i, x] == self.move_range + 4) > 0:
-                    bilateral2[i, x] = np.expand_dims(cv2.bilateralFilter(self.image[i, x].squeeze().astype(np.float32), d=5,
-                                                                       sigmaColor=sigmoid(par[i, x][7])*0.4+0.8, sigmaSpace=5), 0)
+                    # bilateral2[i, x] = np.expand_dims(cv2.bilateralFilter(self.image[i, x].squeeze().astype(np.float32), d=5,
+                    #                                                    sigmaColor=sigmoid(par[i, x][7])*0.4+0.8, sigmaSpace=5), 0)
+                    bilateral2[i, x] = np.expand_dims(
+                        cv2.bilateralFilter(self.image[i, x].squeeze().astype(np.float32), d=5,
+                                            sigmaColor=1.0, sigmaSpace=5), 0)
                 if np.sum(act[i, x] == self.move_range + 5) > 0:
                     box[i, x] = np.expand_dims(
                         cv2.boxFilter(self.image[i, x].squeeze().astype(np.float32), ddepth=-1, ksize=(5, 5)), 0)

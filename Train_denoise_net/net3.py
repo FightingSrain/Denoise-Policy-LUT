@@ -36,54 +36,54 @@ class Net(nn.Module):
     def __init__(self):
         super(Net, self).__init__()
 
-        self.conv1a = nn.Conv2d(1, 32, 2, stride=1, padding=0, dilation=1)
-        self.conv1b = nn.Conv2d(1, 32, 2, stride=1, padding=0, dilation=2)
-        self.conv1c = nn.Conv2d(1, 32, (1, 4), stride=1, padding=0, dilation=1)
+        self.conv1a = nn.Conv2d(1, 64, 2, stride=1, padding=0, dilation=1)
+        self.conv1b = nn.Conv2d(1, 64, 2, stride=1, padding=0, dilation=2)
+        self.conv1c = nn.Conv2d(1, 64, (1, 4), stride=1, padding=0, dilation=1)
 
-        # self.conv2 = nn.Conv2d(64, 64, 1, stride=1, padding=0, dilation=1)
-        # self.conv3 = nn.Conv2d(64, 64, 1, stride=1, padding=0, dilation=1)
-        # self.conv4 = nn.Conv2d(64, 64, 1, stride=1, padding=0, dilation=1)
-        #
-        # self.conv5 = nn.Conv2d(64, 64, 1, stride=1, padding=0, dilation=1)
-        # self.conv6 = nn.Conv2d(64, 64, 1, stride=1, padding=0, dilation=1)
-        # self.conv7 = nn.Conv2d(64, 1, 1, stride=1, padding=0, dilation=1)
+        self.conv2 = nn.Conv2d(64, 64, 1, stride=1, padding=0, dilation=1)
+        self.conv3 = nn.Conv2d(64, 64, 1, stride=1, padding=0, dilation=1)
+        self.conv4 = nn.Conv2d(64, 64, 1, stride=1, padding=0, dilation=1)
 
-        nf = 32
-        self.conv2 = DenseConv(nf, nf)
-        self.conv3 = DenseConv(nf + nf * 1, nf)
-        self.conv4 = DenseConv(nf + nf * 2, nf)
-        self.conv5 = DenseConv(nf + nf * 3, nf)
-        self.conv6 = Conv(nf * 5, 1, 1)
+        self.conv5 = nn.Conv2d(64, 64, 1, stride=1, padding=0, dilation=1)
+        self.conv6 = nn.Conv2d(64, 64, 1, stride=1, padding=0, dilation=1)
+        self.conv7 = nn.Conv2d(64, 1, 1, stride=1, padding=0, dilation=1)
+
+        # nf = 32
+        # self.conv2 = DenseConv(nf, nf)
+        # self.conv3 = DenseConv(nf + nf * 1, nf)
+        # self.conv4 = DenseConv(nf + nf * 2, nf)
+        # self.conv5 = DenseConv(nf + nf * 3, nf)
+        # self.conv6 = Conv(nf * 5, 1, 1)
         self.act = nn.ReLU()
 
         self.mods = ['a', 'b', 'c']
         # Init weights
-        # for m in self.modules():
-        #     classname = m.__class__.__name__
-        #     if classname.lower().find('conv') != -1:
-        #         if m == self.conv1c:
-        #             continue
-        #         nn.init.kaiming_normal(m.weight)
-        #         if m.bias is not None:
-        #             nn.init.constant(m.bias, 0)
-        #     elif classname.find('bn') != -1:
-        #         m.weight.data.normal_(1.0, 0.02)
-        #         m.bias.data.fill_(0)
+        for m in self.modules():
+            classname = m.__class__.__name__
+            if classname.lower().find('conv') != -1:
+                if m == self.conv1c:
+                    continue
+                nn.init.kaiming_normal(m.weight)
+                if m.bias is not None:
+                    nn.init.constant(m.bias, 0)
+            elif classname.find('bn') != -1:
+                m.weight.data.normal_(1.0, 0.02)
+                m.bias.data.fill_(0)
 
     def cal(self, x):
-        x = self.act(x)
-        x = self.conv2(x)
-        x = self.conv3(x)
-        x = self.conv4(x)
-        x = self.conv5(x)
-        res = self.conv6(x)
+        # x = self.act(x)
+        # x = self.conv2(x)
+        # x = self.conv3(x)
+        # x = self.conv4(x)
+        # x = self.conv5(x)
+        # res = self.conv6(x)
 
-        # xs = self.conv2(F.relu(x))
-        # xs = self.conv3(F.relu(xs))
-        # xs = self.conv4(F.relu(xs))
-        # xs = self.conv5(F.relu(xs))
-        # xs = self.conv6(F.relu(xs))
-        # res = self.conv7(F.relu(xs))
+        xs = self.conv2(F.relu(x))
+        xs = self.conv3(F.relu(xs))
+        xs = self.conv4(F.relu(xs))
+        xs = self.conv5(F.relu(xs))
+        xs = self.conv6(F.relu(xs))
+        res = (self.conv7(F.relu(xs)))
         return res
     def transfer_lut(self, x, mod):
         if mod == 'a':
@@ -173,10 +173,13 @@ class Net(nn.Module):
             x = torch.rot90(x, rot1, [2, 3])
             residuel = self.pi_and_v(F.pad(x, (0, pad, 0, pad), mode='replicate'), mod)
             residuel = torch.rot90(residuel, rot2, [2, 3])
-        residuels += residuel
-
-        if mod == 'c':
-            residuels /= 3.
+        if mod == 'a':
+            residuels += (residuel * 0.4)
+        elif mod == 'b':
+            residuels += (residuel * 0.3)
+        elif mod == 'c':
+            residuels += (residuel * 0.3)
+            # residuels /= 3.
             self.round_func(residuels)
         return residuels
 
@@ -209,9 +212,11 @@ class Net(nn.Module):
 
         # res = (torch.clamp(residuel1, -1, 1) * 127 + torch.clamp(residuel2, -1, 1) * 127)
         # res += (torch.clamp(residuel3, -1, 1) * 127 + torch.clamp(residuel4, -1, 1) * 127)
+        # res /= 4.
+        # res = torch.clamp(res + 127, 0, 255)
         # res /= 255.0
         res = torch.tanh((residuel1 + residuel2 + residuel3 + residuel4) / 4.0) + x
-
+        # res = ((residuel1 + residuel2 + residuel3 + residuel4) / 4.0) * 0.5 + x
         return res
 
 # test

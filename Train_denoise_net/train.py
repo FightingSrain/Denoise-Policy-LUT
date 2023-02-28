@@ -59,7 +59,7 @@ def main():
     val_data_size = MiniBatchLoader.count_paths(VAL_DATA_PATH)
     indices_val = np.random.permutation(val_data_size)
 
-    r_val = indices_val[0: 100]
+    r_val = indices_val
     raw_val = mini_batch_loader.load_val_data(r_val)
     len_val = len(raw_val)
     ValData = []

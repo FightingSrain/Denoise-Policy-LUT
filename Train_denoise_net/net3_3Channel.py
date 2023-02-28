@@ -35,7 +35,7 @@ class DenseConv(nn.Module):
 class Net(nn.Module):
     def __init__(self):
         super(Net, self).__init__()
-        self.n_act = 27
+
         self.conv1a = nn.Conv2d(3, 64, 2, stride=1, padding=0, dilation=1)
         self.conv1b = nn.Conv2d(3, 64, 2, stride=1, padding=0, dilation=2)
         self.conv1c = nn.Conv2d(3, 64, (1, 4), stride=1, padding=0, dilation=1)
@@ -46,7 +46,7 @@ class Net(nn.Module):
 
         self.conv5 = nn.Conv2d(64, 64, 1, stride=1, padding=0, dilation=1)
         self.conv6 = nn.Conv2d(64, 64, 1, stride=1, padding=0, dilation=1)
-        self.conv7 = nn.Conv2d(64, self.n_act, 1, stride=1, padding=0, dilation=1)
+        self.conv7 = nn.Conv2d(64, 3, 1, stride=1, padding=0, dilation=1)
 
         # nf = 32
         # self.conv2 = DenseConv(nf, nf)
@@ -56,7 +56,7 @@ class Net(nn.Module):
         # self.conv6 = Conv(nf * 5, 1, 1)
         self.act = nn.ReLU()
 
-        self.mods = ['a', 'b', 'c']
+        self.mods = ['a', 'b']
         # Init weights
         for m in self.modules():
             classname = m.__class__.__name__
@@ -120,37 +120,41 @@ class Net(nn.Module):
     def pi_and_v(self, x, mod):
         if mod == 'a':
             B, C, H, W = x.size()
-            # x_in = x.reshape(B*C, 1, H, W)
             x_in = x.reshape(B, C, H, W)
             res = self.cal(self.conv1a(x_in))
-            res = res.reshape(B, self.n_act, H-1, W-1)
+            res = res.reshape(B, C, H-1, W-1)
             return res
         elif mod == 'b':
             B, C, H, W = x.size()
             x_in = x.reshape(B, C, H, W)
             res = self.cal(self.conv1b(x_in))
-            res = res.reshape(B, self.n_act, H-2, W-2)
+            res = res.reshape(B, C, H-2, W-2)
             return res
         elif mod == 'c':
             self.K = 3
             self.S = 1
         self.P = self.K - 1
         B, C, H, W = x.shape
+        # print(x.shape)
         x = F.unfold(x, self.K)  # B,C*K*K,L
+        # print(x.shape)
+        # print("*******")
         x = x.view(B, C, self.K * self.K, (H - self.P) * (W - self.P))  # B,C,K*K,L
         x = x.permute((0, 3, 1, 2))  # B,L,C,K*K
         x = x.reshape(B * (H - self.P) * (W - self.P),
-                      C, self.K, self.K)  # B*L,C,K,K
-        # x = x.unsqueeze(1)  # B*L,C,K,K
+                      C, self.K, self.K)  # B*C*L,K,K
+        # x = x.unsqueeze(1)  # B*C*L,l,K,K
+        print(x.shape)
 
         if mod == 'c':
             x = torch.cat([x[:, :, 0, 0], x[:, :, 1, 1],
                            x[:, :, 1, 2], x[:, :, 2, 1]], dim=1)
 
             x = x.unsqueeze(1).unsqueeze(1)
+        print(x.shape)
         x = self.cal(self.conv1c(x))  # B*C*L,K,K
         x = x.squeeze(1)
-        x = x.reshape(B, 27, (H - self.P) * (W - self.P), -1)  # B,27,K*K,L
+        x = x.reshape(B, C, (H - self.P) * (W - self.P), -1)  # B,C,K*K,L
         x = x.permute((0, 1, 3, 2))  # B,C,K*K,L
         x = x.reshape(B, -1, (H - self.P) * (W - self.P))  # B,C*K*K,L
         x = F.fold(x, ((H - self.P) * self.S, (W - self.P) * self.S),

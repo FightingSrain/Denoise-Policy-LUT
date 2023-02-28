@@ -7,7 +7,7 @@ class config:
     MAX_EPISODE = 100000
     GAMMA = 0.95
     N_ACTIONS = 9
-    BATCH_SIZE = 15
+    BATCH_SIZE = 11
     LR = 0.0001
 
     sigma = 25

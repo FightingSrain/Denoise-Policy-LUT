@@ -121,8 +121,8 @@ def main():
             # reward = (np.square(label - previous_image) + 8 * np.square(previous_image - label - (pre_ori1 - pre_ori2))) - \
             #          (np.square(label - current_state.image) + 8 * np.square(current_state.image - label - (cur_ori1 - cur_ori2)))
             # reward *= 255
-            reward = np.square(label - previous_image) * 255 - \
-                     np.square(label - current_state.image) * 255
+            reward = 255 * (np.square(label - previous_image) - np.square(label - current_state.image))
+
             reward = reward.reshape(reward.shape[0]*3, 1, reward.shape[2], reward.shape[3])
             # reward = -np.square(current_state.image - label) * 255
             sum_reward += np.mean(reward) * np.power(config.GAMMA, t)

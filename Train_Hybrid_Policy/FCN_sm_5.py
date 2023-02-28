@@ -49,7 +49,7 @@ class PPO(nn.Module):
 
         self.conv1a = nn.Conv2d(1, 64, 2, stride=1, padding=0, dilation=1)
         self.conv1b = nn.Conv2d(1, 64, 2, stride=1, padding=0, dilation=2)
-        # self.conv1c = nn.Conv2d(1, 64, (1, 4), stride=1, padding=0, dilation=1)
+        self.conv1c = nn.Conv2d(1, 64, (1, 4), stride=1, padding=0, dilation=1)
         #------------
         self.conv2 = nn.Conv2d(64, 64, 1, stride=1, padding=0, dilation=1)
         self.conv3 = nn.Conv2d(64, 64, 1, stride=1, padding=0, dilation=1)
@@ -72,7 +72,7 @@ class PPO(nn.Module):
         # self.bias = nn.Parameter(data=torch.zeros(1), requires_grad=False)
         # self.convR = nn.Conv2d(1, 1, self.weight, stride=1, padding=16, bias=False)
 
-        self.mods = ['a', 'b']
+        self.mods = ['a', 'b', 'c']
 
         # Init weights
         for m in self.modules():
@@ -96,25 +96,15 @@ class PPO(nn.Module):
         x = F.conv2d(x, self.weight, self.bias, stride=1, padding=16)
         return x
 
-    def pi_and_v(self, x, mod):
+    def cal(self, x):
         B, C, H, W = x.size()
-        x_in = x.reshape(B * C, 1, H, W)
-        # print(x_in.shape)
-        if mod == 'a':
-            x1 = self.conv1a(x_in)
-        elif mod == 'b':
-            x1 = self.conv1b(x_in)
-        # else: # mod == 'c':
-        #     x1 = self.conv1c(x_in)
-
-        x1 = F.relu(x1)
+        x1 = F.relu(x)
         x2 = self.conv2(x1)
         x2 = F.relu(x2)
         x3 = self.conv3(x2)
         x3 = F.relu(x3)
         x4 = self.conv4(x3)
         x4 = F.relu(x4)
-
 
         pd1 = self.conv4pd(x4)
         pd1 = F.relu(pd1)
@@ -127,25 +117,90 @@ class PPO(nn.Module):
         pc2 = self.conv5pc(pc1)
         pc2 = F.relu(pc2)
         mean = self.mean(pc2)
-        logstd = self.logstd.expand([B * C, self.action_n])
+        # logstd = self.logstd.expand([B, self.action_n])
 
         v1 = self.conv4v(x4)
         v1 = F.relu(v1)
         v2 = self.conv5v(v1)
         v2 = F.relu(v2)
         value = self.conv6v(v2)
-        # print(Dpolicy.shape, mean.shape, logstd.shape, value.shape)
-        # print("TTTTTTTTT")
+        return Dpolicy, mean, value
+
+    def pi_and_v(self, x, mod):
+        B, C, H, W = x.size()
+        x_in = x.reshape(B * C, 1, H, W)
+        # print(x_in.shape)
         if mod == 'a':
-            return Dpolicy.contiguous().reshape(B*C, self.action_n, H-1, W-1), \
-                   mean.contiguous().reshape(B*C, self.action_n, H-1, W-1), \
-                   logstd.contiguous().reshape(B*C, self.action_n), \
-                   value.contiguous().reshape(B*C, 1, H-1, W-1)
+            x1 = self.conv1a(x_in)
+            Dpolicy, mean, value = self.cal(x1)
+            logstd = self.logstd.expand([B*C, self.action_n])
+            # print(Dpolicy.size())
+            # print(mean.size())
+            # print(logstd.size())
+            # print(value.size())
+            # print("*************")
+            return Dpolicy.contiguous().reshape(x_in.shape[0], self.action_n, H - 1, W - 1), \
+                   mean.contiguous().reshape(x_in.shape[0], self.action_n, H - 1, W - 1), \
+                   logstd.contiguous().reshape(x_in.shape[0], self.action_n), \
+                   value.contiguous().reshape(x_in.shape[0], 1, H - 1, W - 1)
+
         elif mod == 'b':
-            return Dpolicy.contiguous().reshape(B*C, self.action_n, H-2, W-2), \
-                   mean.contiguous().reshape(B*C, self.action_n, H-2, W-2), \
-                   logstd.contiguous().reshape(B*C, self.action_n), \
-                   value.contiguous().reshape(B*C, 1, H-2, W-2)
+            x1 = self.conv1b(x_in)
+            Dpolicy, mean, value = self.cal(x1)
+            logstd = self.logstd.expand([B * C, self.action_n])
+            return Dpolicy.contiguous().reshape(x_in.shape[0], self.action_n, H - 2, W - 2), \
+                   mean.contiguous().reshape(x_in.shape[0], self.action_n, H - 2, W - 2), \
+                   logstd.contiguous().reshape(x_in.shape[0], self.action_n), \
+                   value.contiguous().reshape(x_in.shape[0], 1, H - 2, W - 2)
+        else: # mod == 'c':
+            self.K = 3
+            self.S = 1
+            # x1 = self.conv1c(x_in)
+
+        self.P = self.K - 1
+        B, C, H, W = x.shape
+        x = F.unfold(x, self.K)  # B,C*K*K,L
+        x = x.view(B, C, self.K * self.K, (H - self.P) * (W - self.P))  # B,C,K*K,L
+        x = x.permute((0, 1, 3, 2))  # B,C,L,K*K
+        x = x.reshape(B * C * (H - self.P) * (W - self.P),
+                      self.K, self.K)  # B*C*L,K,K
+        x = x.unsqueeze(1)  # B*C*L,l,K,K
+
+        if mod == 'c':
+            x = torch.cat([x[:, :, 0, 0], x[:, :, 1, 1],
+                           x[:, :, 1, 2], x[:, :, 2, 1]], dim=1)
+
+            x = x.unsqueeze(1).unsqueeze(1)
+        # print(x.size())
+        Dpolicy, mean, value = self.cal(self.conv1c(x))  # B*C*L,K,K
+        Dpolicy = Dpolicy.squeeze(1)
+        Dpolicy = Dpolicy.reshape(B, C, (H - self.P) * (W - self.P), -1)  # B,C,K*K,L
+        Dpolicy = Dpolicy.permute((0, 1, 3, 2))  # B,C,K*K,L
+        Dpolicy = Dpolicy.reshape(B, -1, (H - self.P) * (W - self.P))  # B,C*K*K,L
+        Dpolicy = F.fold(Dpolicy, ((H - self.P) * self.S, (W - self.P) * self.S),
+                   self.S, stride=self.S)
+        mean = mean.squeeze(1)
+        mean = mean.reshape(B, C, (H - self.P) * (W - self.P), -1)  # B,C,K*K,L
+        mean = mean.permute((0, 1, 3, 2))  # B,C,K*K,L
+        mean = mean.reshape(B, -1, (H - self.P) * (W - self.P))  # B,C*K*K,L
+        mean = F.fold(mean, ((H - self.P) * self.S, (W - self.P) * self.S),
+                         self.S, stride=self.S)
+        value = value.squeeze(1)
+        value = value.reshape(B, C, (H - self.P) * (W - self.P), -1)  # B,C,K*K,L
+        value = value.permute((0, 1, 3, 2))  # B,C,K*K,L
+        value = value.reshape(B, -1, (H - self.P) * (W - self.P))  # B,C*K*K,L
+        value = F.fold(value, ((H - self.P) * self.S, (W - self.P) * self.S),
+                      self.S, stride=self.S)
+
+        # logstd = logstd.squeeze(1)
+        # logstd = logstd.reshape(B, C, (H - self.P) * (W - self.P), -1)  # B,C,K*K,L
+        # logstd = logstd.permute((0, 1, 3, 2))  # B,C,K*K,L
+        # logstd = logstd.reshape(B, -1, (H - self.P) * (W - self.P))  # B,C*K*K,L
+        # logstd = F.fold(logstd, ((H - self.P) * self.S, (W - self.P) * self.S),
+        #                self.S, stride=self.S)
+        logstd = self.logstd.expand(x_in.shape[0], self.action_n)
+        # print(logstd.size())
+        return Dpolicy, mean, self.parse_p(logstd), value
     @staticmethod
     def round_func(input):
         # Backward Pass Differentiable Approximation (BPDA)
@@ -169,7 +224,8 @@ class PPO(nn.Module):
             mean = torch.rot90(mean, rot2, [2, 3])
             # logstd = torch.rot90(logstd, rot2, [2, 3])
             value = torch.rot90(value, rot2, [2, 3])
-
+        # print(logstds)
+        # print(logstd.size())
         policys += policy
         means += mean
         logstds += logstd

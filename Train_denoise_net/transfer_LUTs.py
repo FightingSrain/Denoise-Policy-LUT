@@ -19,10 +19,10 @@ def paint_amap(acmap):
     plt.show()
     # plt.close('all')
 
-SAMPLING_INTERVAL = 4
+SAMPLING_INTERVAL = 3
 sigma = 25
 model = Net().to(device)
-model.load_state_dict(torch.load("./DenoiseNetModelMax_{}/83700_26.190159255783744_0.8766308300422899.pth".format(sigma)))
+model.load_state_dict(torch.load("./DenoiseNetModelMax_{}/19100_25.97896944497365_0.8727056456334663.pth".format(sigma)))
 
 print("-----------------")
 mods = ['a', 'b', 'c']

@@ -18,7 +18,7 @@ from Train_denoise_net.interp import FourSimplexInterp
 
 
 
-SAMPLING_INTERVAL = 4       # N bit uniform sampling
+SAMPLING_INTERVAL = 3       # N bit uniform sampling
 sigma = 25               # Gaussian noise std
 L = 2 ** (8 - SAMPLING_INTERVAL) + 1
 q = 2**SAMPLING_INTERVAL
@@ -52,7 +52,7 @@ def interp_LUTs_main():
         # 转为RGB
         img_gt = cv2.cvtColor(img_gt, cv2.COLOR_BGR2RGB)
         h, w, c = img_gt.shape  # (481, 321)
-        raw_n = np.random.normal(0, 15, img_gt.shape).astype(img_gt.dtype) / 255.
+        raw_n = np.random.normal(0, 25, img_gt.shape).astype(img_gt.dtype) / 255.
         ins_noisy = (np.clip(img_gt + raw_n, a_min=0., a_max=1.) * 255).astype(np.uint8)
 
         res1s, res2s, res3s, res4s = 0, 0, 0, 0
@@ -122,7 +122,7 @@ def interp_LUTs_main():
                                      w, h, q, L, mod)
             res4s += np.rot90(res4, 1, axes=[0, 1])
 
-        res = np.tanh((res1s/3. + res2s/3. + res3s/3. + res4s/3.) / 4.) + ins_noisy / 255.
+        res = ((res1s/3. + res2s/3. + res3s/3. + res4s/3.) / 4.) + ins_noisy / 255.
         res = np.clip(res, a_min=0., a_max=1.)
 
         cv2.imshow("gt", (img_gt * 255).astype(np.uint8))
