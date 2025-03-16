@@ -11,7 +11,6 @@
 
 
 
-`Just run Train_torch.py.`
 
 
 
